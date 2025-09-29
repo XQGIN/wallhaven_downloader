@@ -16,7 +16,7 @@
 
 ### 方法一：直接运行可执行文件
 
-1. 从[Releases](https://github.com/XQGIN/wallhaven_downloader/releases)页面下载最新的`WallpaperDownloader_Setup.exe`安装程序
+1. 从[Releases](https://github.com/XQGIN/wallhaven_downloader/releases)页面下载最新的`WallpaperDownloader.exe`安装程序
 2. 双击运行安装程序，按照提示完成安装
 3. 安装完成后，可以从桌面快捷方式或开始菜单启动程序
 
@@ -59,7 +59,6 @@ wallhaven_downloader/
 ├── icon/               # 图标资源
 ├── requirements.txt    # 依赖列表
 ├── settings.json       # 默认设置配置
-└── wallhaven_downloader.spec  # PyInstaller打包配置
 ```
 
 ## 开发环境
@@ -70,19 +69,9 @@ wallhaven_downloader/
 - Pillow 10.0.0
 - psutil 5.9.5
 
-## 打包方法
-
-如果需要自行打包程序，请使用以下命令：
-
-```
-pyinstaller wallhaven_downloader.spec
-```
-
-打包后的程序将生成在`dist`目录下。
-
 ## 最新更新
 
-### 版本 1.1.0
+### 版本 1.0.0
 
 #### 新增功能
 - **进程自动管理**：程序关闭或退出后自动关闭所有后台进程，确保系统资源得到释放
@@ -98,5 +87,6 @@ pyinstaller wallhaven_downloader.spec
 - 新增psutil==5.9.5依赖，用于进程管理功能
 
 ## License
+
 
 [MIT](LICENSE)
