@@ -12,6 +12,8 @@ import concurrent.futures
 from datetime import datetime
 from PIL import Image
 from io import BytesIO
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # 用于处理资源路径的函数
 def resource_path(relative_path):
@@ -57,16 +59,61 @@ class WallpaperDownloadThread(QThread):
         self._last_progress_update = 0  # 上次更新进度的时间
         self._progress_update_threshold = 100  # 进度更新阈值（毫秒）
         self.concurrent_downloads = concurrent_downloads  # 并发下载数
+        self.session = self.create_session()  # 创建会话
+        self.success_count = 0  # 成功下载计数
+        self.failed_count = 0   # 失败下载计数
+        self.skipped_count = 0  # 跳过下载计数
+        self.max_retries = 3    # 最大重试次数
         
         # 恢复下载状态
         self.resume_state = resume_state or {}
         self.current_page = self.resume_state.get('current_page', 1)
-        self.processed_urls = self.resume_state.get('processed_urls', set())
-        self.downloaded_files = self.resume_state.get('downloaded_files', set())
+        # 确保从JSON读取的列表转换为集合
+        processed_urls = self.resume_state.get('processed_urls', set())
+        downloaded_files = self.resume_state.get('downloaded_files', set())
+        # 处理可能的类型转换（从JSON读取的是list）
+        self.processed_urls = set(processed_urls) if isinstance(processed_urls, (list, set)) else set()
+        self.downloaded_files = set(downloaded_files) if isinstance(downloaded_files, (list, set)) else set()
         self.is_resuming = bool(resume_state)  # 是否是恢复下载
+    
+    def create_session(self):
+        """创建带有重试机制的会话 - 使用test.py中的优化逻辑"""
+        session = requests.Session()
+        
+        # 配置重试策略
+        retry_strategy = Retry(
+            total=3,  # 总重试次数
+            status_forcelist=[429, 500, 502, 503, 504],  # 需要重试的HTTP状态码
+            allowed_methods=["HEAD", "GET", "OPTIONS"],  # 允许重试的HTTP方法
+            backoff_factor=1,  # 重试间隔倍数
+            raise_on_status=False
+        )
+        
+        # 配置HTTP适配器
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy,
+            pool_connections=10,  # 连接池大小
+            pool_maxsize=20
+        )
+        
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        # 设置请求头，模拟浏览器
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Referer': 'https://wallhaven.cc/'
+        })
+        
+        return session
         
     def download_single_image(self, img_url, img_filename):
-        """下载单个图片"""
+        """下载单个图片 - 使用test.py中的优化逻辑"""
         try:
             if not self.is_running:
                 return None
@@ -74,33 +121,106 @@ class WallpaperDownloadThread(QThread):
             print(f"[日志] 下载图片: {img_filename}")
             file_path = os.path.join(self.download_dir, img_filename)
             
-            # 下载图片
-            imgreq = requests.get(img_url, cookies=self.cookies, timeout=30)
+            # 检查文件是否已存在
+            if os.path.exists(file_path):
+                print(f"[日志] 文件已存在，跳过下载: {img_filename}")
+                self.skipped_count += 1
+                return (file_path, None, True)
             
-            if imgreq.status_code == 200:
-                # 保存图片
-                with open(file_path, 'wb') as image_file:
-                    for chunk in imgreq.iter_content(1024):
-                        image_file.write(chunk)
-                
-                # 记录已下载的文件
-                self.downloaded_files.add(img_filename)
-                
-                # 加载图片用于预览
+            # 添加cookies
+            if self.cookies:
+                self.session.cookies.update(self.cookies)
+            
+            # 下载图片 - 使用test.py中的重试逻辑和流式下载
+            max_retries = self.max_retries
+            retry_count = 0
+            success = False
+            
+            while retry_count < max_retries and not success:
                 try:
-                    img_data = imgreq.content
-                    pixmap = QPixmap()
-                    pixmap.loadFromData(img_data)
-                    return (file_path, pixmap, True)
+                    # 使用流式下载，避免内存占用过大
+                    imgreq = self.session.get(
+                        img_url, 
+                        timeout=(10, 30),  # 连接超时10秒，读取超时30秒
+                        stream=True
+                    )
+                    
+                    if imgreq.status_code == 200:
+                        # 保存图片 - 使用流式写入
+                        with open(file_path, 'wb') as image_file:
+                            for chunk in imgreq.iter_content(chunk_size=8192):
+                                if not self.is_running:
+                                    # 如果下载被中断，删除不完整文件
+                                    if os.path.exists(file_path):
+                                        try:
+                                            os.remove(file_path)
+                                        except:
+                                            pass
+                                    return None
+                                if chunk:
+                                    image_file.write(chunk)
+                        
+                        # 记录已下载的文件
+                        self.downloaded_files.add(img_filename)
+                        self.success_count += 1
+                        
+                        # 加载图片用于预览
+                        try:
+                            # 重新打开文件读取，而不是使用请求内容
+                            with open(file_path, 'rb') as f:
+                                img_data = f.read()
+                            
+                            pixmap = QPixmap()
+                            pixmap.loadFromData(img_data)
+                            
+                            # 缩放到适当大小
+                            if not pixmap.isNull():
+                                scaled_pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                                return (file_path, scaled_pixmap, True)
+                            else:
+                                print(f"[日志] 创建预览失败: {img_filename}")
+                                return (file_path, None, True)
+                        except Exception as e:
+                            print(f"[日志] 加载预览图片失败: {e}")
+                            return (file_path, None, True)
+                    elif imgreq.status_code in [403, 404]:
+                        # 无权限或不存在，直接跳过
+                        print(f"[日志] 跳过下载: {img_filename}, 状态码: {imgreq.status_code}")
+                        self.skipped_count += 1
+                        return (img_filename, None, False)
+                    else:
+                        retry_count += 1
+                        wait_time = min(2 ** retry_count, 10)  # 指数退避，最大等待10秒
+                        print(f"[日志] 下载图片失败: {img_filename}, 状态码: {imgreq.status_code}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
+                        time.sleep(wait_time)
+                        
+                except (requests.exceptions.ConnectionError, 
+                        requests.exceptions.Timeout,
+                        requests.exceptions.ChunkedEncodingError) as e:
+                    retry_count += 1
+                    wait_time = min(2 ** retry_count, 10)
+                    print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
+                    time.sleep(wait_time)
                 except Exception as e:
-                    print(f"[日志] 加载预览图片失败: {e}")
-                    return (file_path, None, True)
-            else:
-                print(f"[日志] 下载图片失败: {img_filename}, 状态码: {imgreq.status_code}")
+                    retry_count += 1
+                    wait_time = min(2 ** retry_count, 10)
+                    print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
+                    time.sleep(wait_time)
+            
+            if not success:
+                print(f"[日志] 下载图片失败: {img_filename}, 已尝试 {max_retries} 次")
+                self.failed_count += 1
+                # 如果下载失败，删除可能存在的不完整文件
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
                 return (img_filename, None, False)
                 
         except Exception as e:
             print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}")
+            self.failed_count += 1
             return (img_filename, None, False)
     
     def run(self):
@@ -110,44 +230,13 @@ class WallpaperDownloadThread(QThread):
             
             start_time = datetime.now()
             
-            # 先获取所有图片URL，计算总数量
-            all_image_urls = []
-            print(f"[日志] 开始获取图片列表...")
-            
-            # 如果是恢复下载，从上次中断的页面开始
-            start_page = self.current_page if self.is_resuming else 1
-            
-            for page_id in range(start_page, self.page_count + 1):
-                if not self.is_running:
-                    break
-                
-                # 获取页面数据
-                url = self.base_url + str(page_id)
-                print(f"[日志] 获取页面 {page_id}: {url}")
-                urlreq = requests.get(url, cookies=self.cookies)
-                
-                if urlreq.status_code != 200:
-                    self.download_failed.emit(f"获取页面数据失败: {urlreq.status_code}")
-                    return
-                
-                pages_images = json.loads(urlreq.content)
-                page_data = pages_images["data"]
-                
-                # 收集图片URL
-                for i in range(len(page_data)):
-                    img_url = page_data[i]["path"]
-                    # 如果不是恢复下载或者URL不在已处理列表中，则添加
-                    if not self.is_resuming or img_url not in self.processed_urls:
-                        all_image_urls.append(img_url)
-                        # 记录已处理的URL
-                        self.processed_urls.add(img_url)
-                
-                # 更新当前页面，用于恢复下载
-                self.current_page = page_id
-            
-            # 设置总图片数
-            self.total_images = len(all_image_urls)
-            print(f"[日志] 总共需要下载 {self.total_images} 张图片")
+            # 尝试加载之前的下载状态
+            if self.is_resuming:
+                if self.load_download_state():
+                    print(f"[日志] 成功加载之前的下载状态，将从第 {self.current_page} 页继续下载")
+                else:
+                    print(f"[日志] 未找到有效的下载状态，将从头开始下载")
+                    self.is_resuming = False
             
             # 检查已存在的文件
             existing_files = set()
@@ -157,163 +246,170 @@ class WallpaperDownloadThread(QThread):
             
             print(f"[日志] 下载目录中已存在 {len(existing_files)} 个文件")
             
-            # 计算需要实际下载的图片数量（不包括重复文件）
-            self.unique_images_to_download = 0
-            unique_image_urls = []
+            # 初始化计数器
+            if not self.is_resuming:
+                self.total_images = 0
+                self.downloaded_images = 0
+                self.duplicate_images = 0
+                self.unique_images_to_download = 0
+                self.success_count = 0
+                self.failed_count = 0
+                self.skipped_count = 0
             
-            for img_url in all_image_urls:
-                filename = os.path.basename(img_url)
-                if filename not in existing_files and filename not in self.downloaded_files:
-                    self.unique_images_to_download += 1
-                    unique_image_urls.append(img_url)
-                else:
-                    self.duplicate_images += 1
-            
-            print(f"[日志] 需要实际下载 {self.unique_images_to_download} 张新图片（不包括重复文件）")
-            
-            # 发送重复文件检测信号
-            if self.duplicate_images > 0:
-                self.duplicate_detected.emit(self.duplicate_images, self.total_images)
-            
-            # 如果没有需要下载的图片，检查是否需要继续下载以达到指定页数
-            if self.unique_images_to_download == 0:
-                print(f"[日志] 所有图片都已存在，无需下载")
-                
-                # 检查是否需要继续下载以达到指定页数
-                images_per_page = 64
-                target_total_images = images_per_page * self.page_count
-                
-                if self.total_images < target_total_images and self.is_running:
-                    print(f"[日志] 当前图片总数({self.total_images})少于目标数量({target_total_images})，继续获取更多页面...")
-                    
-                    # 计算需要额外获取的页面数
-                    additional_pages_needed = (target_total_images - self.total_images + images_per_page - 1) // images_per_page
-                    
-                    for page_id in range(self.page_count + 1, self.page_count + additional_pages_needed + 1):
-                        if not self.is_running:
-                            break
-                        
-                        # 获取页面数据
-                        url = self.base_url + str(page_id)
-                        print(f"[日志] 获取额外页面 {page_id}: {url}")
-                        urlreq = requests.get(url, cookies=self.cookies)
-                        
-                        if urlreq.status_code != 200:
-                            print(f"[日志] 获取额外页面数据失败: {urlreq.status_code}")
-                            continue
-                        
-                        pages_images = json.loads(urlreq.content)
-                        page_data = pages_images["data"]
-                        
-                        # 处理额外页面的图片
-                        for i in range(len(page_data)):
-                            img_url = page_data[i]["path"]
-                            filename = os.path.basename(img_url)
-                            
-                            # 检查是否已存在
-                            if filename not in existing_files and filename not in self.downloaded_files:
-                                print(f"[日志] 下载额外图片: {filename}")
-                                file_path = os.path.join(self.download_dir, filename)
-                                
-                                # 下载图片
-                                imgreq = requests.get(img_url, cookies=self.cookies)
-                                
-                                if imgreq.status_code == 200:
-                                    # 保存图片
-                                    with open(file_path, 'wb') as image_file:
-                                        for chunk in imgreq.iter_content(1024):
-                                            image_file.write(chunk)
-                                    
-                                    # 记录已下载的文件
-                                    self.downloaded_files.add(filename)
-                                    
-                                    # 加载图片用于预览
-                                    try:
-                                        img_data = imgreq.content
-                                        pixmap = QPixmap()
-                                        pixmap.loadFromData(img_data)
-                                        self.image_downloaded.emit(file_path, pixmap)
-                                    except Exception as e:
-                                        print(f"[日志] 加载预览图片失败: {e}")
-                                    
-                                    self.downloaded_images += 1
-                                    self.unique_images_to_download += 1
-                                    
-                                    # 更新进度
-                                    progress = min(100, int((self.downloaded_images / self.unique_images_to_download) * 100))
-                                    self.progress_updated.emit(progress, filename)
-                                elif imgreq.status_code not in (403, 404):
-                                    print(f"[日志] 下载额外图片失败: {imgreq.status_code}")
-                                    continue
-                            else:
-                                self.duplicate_images += 1
-                                print(f"[日志] 检测到额外页面中的重复文件: {filename}")
-                else:
-                    print(f"[日志] 当前图片总数({self.total_images})已达到或超过目标数量({target_total_images})，无需继续下载")
-                
-                # 下载完成
-                if self.duplicate_images > 0:
-                    print(f"[日志] 下载完成，共检测到 {self.duplicate_images} 个重复文件")
-                else:
-                    print(f"[日志] 下载完成，未检测到重复文件")
-                
-                self.download_completed.emit()
-                return
+            # 如果是恢复下载，从上次中断的页面开始
+            start_page = self.current_page if self.is_resuming else 1
             
             # 使用线程池并发下载图片
-            print(f"[日志] 开始并发下载 {self.unique_images_to_download} 张图片，并发数: {self.concurrent_downloads}")
-            
-            # 创建线程池
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.concurrent_downloads) as executor:
-                # 提交所有下载任务
-                future_to_url = {
-                    executor.submit(self.download_single_image, img_url, os.path.basename(img_url)): img_url
-                    for img_url in unique_image_urls
-                }
-                
-                # 处理完成的任务
-                for future in concurrent.futures.as_completed(future_to_url):
+                # 逐页获取并下载图片 - 使用test.py中的优化逻辑
+                for page_id in range(start_page, self.page_count + 1):
                     if not self.is_running:
-                        # 取消所有未完成的任务
-                        for f in future_to_url:
-                            f.cancel()
                         break
                     
-                    img_url = future_to_url[future]
-                    filename = os.path.basename(img_url)
+                    # 获取页面数据 - 添加超时和重试机制
+                    url = self.base_url + str(page_id)
+                    print(f"[日志] 获取页面 {page_id}: {url}")
+                    retry_count = 0
+                    max_retries = 3
+                    success = False
                     
-                    try:
-                        result = future.result()
-                        if result is None:
-                            continue  # 下载被取消
-                            
-                        file_path, pixmap, success = result
-                        
-                        if success:
-                            # 发送图片下载完成信号
-                            if pixmap:
-                                self.image_downloaded.emit(file_path, pixmap)
-                            
-                            self.downloaded_images += 1
-                        else:
-                            # 下载失败，但不是403或404错误
-                            if isinstance(file_path, str) and file_path != filename:
-                                self.download_failed.emit(f"下载图片失败: {file_path}")
-                                continue
-                    except Exception as e:
-                        print(f"[日志] 处理下载结果异常: {e}")
-                        continue
+                    # 添加cookies
+                    if self.cookies:
+                        self.session.cookies.update(self.cookies)
                     
-                    # 更新进度，确保不超过100%
-                    if self.unique_images_to_download > 0:
-                        progress = min(100, int((self.downloaded_images / self.unique_images_to_download) * 100))
-                        self.progress_updated.emit(progress, filename)
+                    while retry_count < max_retries and not success:
+                        try:
+                            # 添加超时参数，防止请求无限期等待
+                            urlreq = self.session.get(url, timeout=(10, 30))
+                            
+                            if urlreq.status_code == 200:
+                                success = True
+                                pages_images = json.loads(urlreq.content)
+                                page_data = pages_images["data"]
+                                
+                                # 更新当前页面，用于恢复下载
+                                self.current_page = page_id
+                                
+                                # 处理当前页面的图片
+                                page_image_count = 0
+                                page_download_count = 0
+                                
+                                # 立即开始下载图片，不等待所有页面获取完成
+                                for i in range(len(page_data)):
+                                    if not self.is_running:
+                                        break
+                                        
+                                    img_url = page_data[i]["path"]
+                                    filename = os.path.basename(img_url)
+                                    self.total_images += 1
+                                    
+                                    # 检查是否已存在
+                                    if filename not in existing_files and filename not in self.downloaded_files:
+                                        # 提交下载任务
+                                        future = executor.submit(self.download_single_image, img_url, filename)
+                                        
+                                        # 等待下载完成（保持并发性，但限制每个页面的并发数）
+                                        try:
+                                            result = future.result()
+                                            if result is None:
+                                                continue  # 下载被取消
+                                                
+                                            file_path, pixmap, success = result
+                                            
+                                            if success:
+                                                # 发送图片下载完成信号
+                                                if pixmap:
+                                                    self.image_downloaded.emit(file_path, pixmap)
+                                                
+                                                self.downloaded_images += 1
+                                                self.unique_images_to_download += 1
+                                                page_download_count += 1
+                                                
+                                                # 更新进度
+                                                progress = min(100, int((self.downloaded_images / (self.page_count * 64)) * 100))
+                                                self.progress_updated.emit(progress, filename)
+                                                
+                                                # 定期保存下载状态
+                                                if self.downloaded_images % 10 == 0:
+                                                    self.save_download_state()
+                                            else:
+                                                # 下载失败，但不是403或404错误
+                                                if isinstance(file_path, str) and file_path != filename:
+                                                    self.download_failed.emit(f"下载图片失败: {file_path}")
+                                                    continue
+                                        except Exception as e:
+                                            print(f"[日志] 处理下载结果异常: {e}")
+                                            continue
+                                    else:
+                                        self.duplicate_images += 1
+                                        self.skipped_count += 1
+                                        print(f"[日志] 检测到重复文件: {filename}")
+                                    
+                                    page_image_count += 1
+                                    
+                                    # 添加动态延迟，避免请求过于频繁
+                                    if not self.is_running:
+                                        break
+                                        
+                                    # 动态调整延迟时间，失败率较高时增加延迟
+                                    total_processed = self.success_count + self.failed_count
+                                    if total_processed > 10:  # 在处理了一定数量后才计算失败率
+                                        failure_rate = self.failed_count / total_processed
+                                        if failure_rate > 0.3:  # 失败率超过30%
+                                            time.sleep(0.5)  # 增加延迟到500毫秒
+                                        elif failure_rate > 0.1:  # 失败率超过10%
+                                            time.sleep(0.3)  # 增加延迟到300毫秒
+                                        else:
+                                            time.sleep(0.1)  # 默认100毫秒延迟
+                                    else:
+                                        time.sleep(0.1)  # 默认100毫秒延迟
+                                
+                                print(f"[日志] 页面 {page_id} 处理完成，共 {page_image_count} 张图片，下载 {page_download_count} 张新图片")
+                                
+                                # 每完成一页保存一次状态
+                                self.save_download_state()
+                                
+                                # 发送重复文件检测信号
+                                if self.duplicate_images > 0:
+                                    self.duplicate_detected.emit(self.duplicate_images, self.total_images)
+                            else:
+                                retry_count += 1
+                                wait_time = min(2 ** retry_count, 10)  # 指数退避，最大等待10秒
+                                print(f"[日志] 获取页面 {page_id} 失败，状态码: {urlreq.status_code}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
+                                time.sleep(wait_time)
+                        except (requests.exceptions.ConnectionError, 
+                                requests.exceptions.Timeout,
+                                requests.exceptions.ChunkedEncodingError) as e:
+                            retry_count += 1
+                            wait_time = min(2 ** retry_count, 10)
+                            print(f"[日志] 获取页面 {page_id} 异常: {e}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
+                            time.sleep(wait_time)
+                        except Exception as e:
+                            retry_count += 1
+                            wait_time = min(2 ** retry_count, 10)
+                            print(f"[日志] 获取页面 {page_id} 异常: {e}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
+                            time.sleep(wait_time)
+                    
+                    if not success:
+                        self.download_failed.emit(f"获取页面 {page_id} 失败，已尝试 {max_retries} 次")
+                        return
             
             # 下载完成
+            print(f"[日志] 下载完成，总共处理 {self.total_images} 张图片")
+            print(f"[日志] 成功下载: {self.success_count} 张, 失败: {self.failed_count} 张, 跳过: {self.skipped_count} 张")
             if self.duplicate_images > 0:
-                print(f"[日志] 下载完成，共检测到 {self.duplicate_images} 个重复文件")
+                print(f"[日志] 共检测到 {self.duplicate_images} 个重复文件")
             else:
-                print(f"[日志] 下载完成，未检测到重复文件")
+                print(f"[日志] 未检测到重复文件")
+            
+            # 下载完成后删除状态文件
+            try:
+                state_file = os.path.join(self.download_dir, 'download_state.json')
+                if os.path.exists(state_file):
+                    os.remove(state_file)
+                    print(f"[日志] 下载状态文件已删除")
+            except Exception as e:
+                print(f"[日志] 删除下载状态文件失败: {e}")
             
             self.download_completed.emit()
         except Exception as e:
@@ -324,11 +420,11 @@ class WallpaperDownloadThread(QThread):
         print(f"[日志] 停止下载线程")
         self.is_running = False
         
-        # 保存当前下载状态，以便恢复
+        # 保存当前下载状态，以便恢复 - 将set转换为list以支持JSON序列化
         resume_state = {
             'current_page': self.current_page,
-            'processed_urls': self.processed_urls,
-            'downloaded_files': self.downloaded_files,
+            'processed_urls': list(self.processed_urls),  # 将set转换为list
+            'downloaded_files': list(self.downloaded_files),  # 将set转换为list
             'base_url': self.base_url,
             'page_count': self.page_count,
             'download_dir': self.download_dir,
@@ -351,6 +447,63 @@ class WallpaperDownloadThread(QThread):
         # 发送状态保存信号
         if hasattr(self, 'state_saved'):
             self.state_saved.emit(resume_state)
+    
+    def save_download_state(self):
+        """保存下载状态，以便在程序中断后可以恢复下载"""
+        state = {
+            'current_page': self.current_page,
+            'downloaded_files': list(self.downloaded_files),
+            'success_count': self.success_count,
+            'failed_count': self.failed_count,
+            'skipped_count': self.skipped_count,
+            'total_images': self.total_images,
+            'downloaded_images': self.downloaded_images,
+            'duplicate_images': self.duplicate_images,
+            'unique_images_to_download': self.unique_images_to_download,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        try:
+            with open(os.path.join(self.download_dir, 'download_state.json'), 'w', encoding='utf-8') as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+            print(f"[日志] 下载状态已保存")
+        except Exception as e:
+            print(f"[日志] 保存下载状态失败: {e}")
+    
+    def load_download_state(self):
+        """加载下载状态，以便恢复下载"""
+        state_file = os.path.join(self.download_dir, 'download_state.json')
+        if not os.path.exists(state_file):
+            return False
+        
+        try:
+            with open(state_file, 'r', encoding='utf-8') as f:
+                state = json.load(f)
+            
+            self.current_page = state.get('current_page', 1)
+            self.downloaded_files = set(state.get('downloaded_files', []))
+            self.success_count = state.get('success_count', 0)
+            self.failed_count = state.get('failed_count', 0)
+            self.skipped_count = state.get('skipped_count', 0)
+            self.total_images = state.get('total_images', 0)
+            self.downloaded_images = state.get('downloaded_images', 0)
+            self.duplicate_images = state.get('duplicate_images', 0)
+            self.unique_images_to_download = state.get('unique_images_to_download', 0)
+            
+            timestamp = state.get('timestamp', '')
+            if timestamp:
+                try:
+                    saved_time = datetime.fromisoformat(timestamp)
+                    print(f"[日志] 加载下载状态成功，上次保存时间: {saved_time}")
+                except:
+                    print(f"[日志] 加载下载状态成功，上次保存时间: {timestamp}")
+            else:
+                print(f"[日志] 加载下载状态成功")
+            
+            return True
+        except Exception as e:
+            print(f"[日志] 加载下载状态失败: {e}")
+            return False
 
 class GlassEffectWidget(QWidget):
     """液态玻璃效果的基础部件"""
@@ -621,9 +774,9 @@ class ImagePreviewWidget(QListWidget):
         icon = QIcon(rounded_pixmap)
         item.setIcon(icon)
         
-        # 设置文本为文件名
-        filename = os.path.basename(file_path)
-        item.setText(filename)
+        # 不设置文本，只显示图片
+        # filename = os.path.basename(file_path)
+        # item.setText(filename)
         
         # 存储文件路径
         item.setData(Qt.UserRole, file_path)
@@ -1282,7 +1435,8 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.settings = settings
         self.setWindowTitle("设置")
-        self.setMinimumWidth(400)
+        self.setMinimumSize(800, 900)
+        self.resize(800, 900)
         self.initUI()
         self.loadSettings()
         
@@ -1681,6 +1835,11 @@ class MainWindow(QMainWindow):
         settings_btn.clicked.connect(self.showSettings)
         left_layout.addWidget(settings_btn)
         
+        # 关于按钮
+        about_btn = GlassButton("关于")
+        about_btn.clicked.connect(self.showAbout)
+        left_layout.addWidget(about_btn)
+        
         # 连接单选按钮信号
         self.category_radio.toggled.connect(self.updateDownloadOptions)
         self.latest_radio.toggled.connect(self.updateDownloadOptions)
@@ -1741,6 +1900,65 @@ class MainWindow(QMainWindow):
         # 加载下载设置
         print("[日志] 加载下载设置...")
         self.loadDownloadSettings()
+    
+    def showAbout(self):
+        """显示关于对话框"""
+        print(f"[日志] 显示关于对话框")
+        dialog = QDialog(self)
+        dialog.setWindowTitle("关于")
+        dialog.setMinimumSize(400, 300)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # 创建玻璃效果容器
+        glass_container = GlassEffectWidget(dialog)
+        glass_layout = QVBoxLayout(glass_container)
+        glass_layout.setContentsMargins(20, 20, 20, 20)
+        glass_layout.setSpacing(15)
+        
+        # 应用标题
+        title_label = QLabel("Wallhaven壁纸下载器")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setFont(QFont("", 16, QFont.Bold))
+        glass_layout.addWidget(title_label)
+        
+        # 版本信息
+        version_label = QLabel("版本 1.0.0")
+        version_label.setAlignment(Qt.AlignCenter)
+        glass_layout.addWidget(version_label)
+        
+        # 作者信息
+        author_label = QLabel("作者: XQGIN")
+        author_label.setAlignment(Qt.AlignCenter)
+        glass_layout.addWidget(author_label)
+        
+        # GitHub链接
+        github_link = QLabel("<a href='https://github.com/XQGIN'>https://github.com/XQGIN</a>")
+        github_link.setAlignment(Qt.AlignCenter)
+        github_link.setOpenExternalLinks(True)
+        glass_layout.addWidget(github_link)
+        
+        # 描述信息
+        desc_label = QLabel("一个简洁美观的Wallhaven壁纸下载工具")
+        desc_label.setAlignment(Qt.AlignCenter)
+        desc_label.setWordWrap(True)
+        glass_layout.addWidget(desc_label)
+        
+        # 确定按钮
+        ok_btn = GlassButton("确定")
+        ok_btn.clicked.connect(dialog.accept)
+        glass_layout.addWidget(ok_btn)
+        
+        layout.addWidget(glass_container)
+        dialog.setLayout(layout)
+        
+        # 应用当前主题
+        transparency = self.settings.get("glass_transparency", 200)
+        glass_container.setTransparency(transparency)
+        ok_btn.setTransparency(transparency)
+        
+        dialog.exec_()
+        print(f"[日志] 关于对话框已关闭")
     
     def updateDownloadOptions(self):
         """更新下载选项的可用状态"""
