@@ -1,0 +1,15 @@
+{
+    "api_key": "dws2O4u6Agr4v1CC92mH90H1T49QSuTM",
+    "theme": "浅色",
+    "glass_transparency": 200,
+    "images_per_page": 64,
+    "download_timeout": 30,
+    "preview_size": "大 (300x300)",
+    "download_dir": "D:/programs/new/wallhaven_test",
+    "download_method": "category",
+    "category": "people",
+    "purity": "sketchy",
+    "search_query": "",
+    "page_count": 100,
+    "concurrent_downloads": 3
+}
