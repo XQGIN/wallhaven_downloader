@@ -5,11 +5,12 @@
     "images_per_page": 64,
     "download_timeout": 30,
     "preview_size": "大 (300x300)",
-    "download_dir": "D:/programs/new/wallhaven_test",
+    "download_dir": "D:/图片/new",
     "download_method": "category",
     "category": "people",
-    "purity": "sketchy",
+    "purity": "nsfw",
     "search_query": "",
     "page_count": 100,
-    "concurrent_downloads": 3
+    "concurrent_downloads": 3,
+    "wallpaper_ratio": "纵向壁纸"
 }

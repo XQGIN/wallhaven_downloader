@@ -35,7 +35,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                             QRadioButton, QButtonGroup, QTabWidget, QScrollArea, QSplitter,
                             QFrame, QStyle, QStyleOption, QDesktopWidget, QSizePolicy, QGridLayout,
                             QLineEdit, QTextEdit, QDialog, QDialogButtonBox, QFormLayout, QDoubleSpinBox,
-                            QGraphicsDropShadowEffect, QAbstractItemView, QScrollBar)
+                            QGraphicsDropShadowEffect, QAbstractItemView, QScrollBar,
+                            QSystemTrayIcon, QMenu, QAction)
 
 class WallpaperDownloadThread(QThread):
     """壁纸下载线程"""
@@ -325,10 +326,6 @@ class WallpaperDownloadThread(QThread):
                                                 self.unique_images_to_download += 1
                                                 page_download_count += 1
                                                 
-                                                # 更新进度
-                                                progress = min(100, int((self.downloaded_images / (self.page_count * 64)) * 100))
-                                                self.progress_updated.emit(progress, filename)
-                                                
                                                 # 定期保存下载状态
                                                 if self.downloaded_images % 10 == 0:
                                                     self.save_download_state()
@@ -344,6 +341,11 @@ class WallpaperDownloadThread(QThread):
                                         self.duplicate_images += 1
                                         self.skipped_count += 1
                                         print(f"[日志] 检测到重复文件: {filename}")
+                                    
+                                    # 更新进度 - 将重复文件也计入进度
+                                    processed_images = self.downloaded_images + self.duplicate_images
+                                    progress = min(100, int((processed_images / (self.page_count * 64)) * 100))
+                                    self.progress_updated.emit(progress, filename)
                                     
                                     page_image_count += 1
                                     
@@ -1582,6 +1584,10 @@ class MainWindow(QMainWindow):
         print("应用主题...")
         self.applyTheme()
         
+        # 初始化系统托盘
+        print("初始化系统托盘...")
+        self.initSystemTray()
+        
         print("主窗口初始化完成")
     
     def loadSettings(self):
@@ -1604,7 +1610,8 @@ class MainWindow(QMainWindow):
             "category": "all",
             "purity": "sfw",
             "search_query": "",
-            "page_count": 1
+            "page_count": 1,
+            "wallpaper_ratio": "全部"  # 壁纸比例设置
         }
         
         # 如果设置文件存在，加载设置
@@ -1696,14 +1703,137 @@ class MainWindow(QMainWindow):
         print(f"[日志] 找到 {len(line_edits)} 个输入框")
         for widget in line_edits:
             widget.setTransparency(transparency)
+    
+    def initSystemTray(self):
+        """初始化系统托盘"""
+        print("[日志] 初始化系统托盘")
         
-        # 更新所有下拉框的透明度
-        combo_boxes = self.findChildren(HoverableComboBox)
-        print(f"[日志] 找到 {len(combo_boxes)} 个下拉框")
-        for widget in combo_boxes:
-            widget.setTransparency(transparency)
+        # 检查系统是否支持系统托盘
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            print("[日志] 系统不支持托盘功能")
+            return
         
-        print(f"[日志] 主题应用完成")
+        # 创建系统托盘图标
+        self.tray_icon = QSystemTrayIcon(self)
+        
+        # 设置托盘图标（使用应用程序图标）
+        icon_path = resource_path("icon/logo.png")
+        if os.path.exists(icon_path):
+            self.tray_icon.setIcon(QIcon(icon_path))
+            print(f"[日志] 设置托盘图标: {icon_path}")
+        else:
+            # 如果图标文件不存在，使用默认图标
+            self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+            print("[日志] 使用默认托盘图标")
+        
+        # 创建托盘菜单
+        tray_menu = QMenu()
+        
+        # 显示窗口动作
+        show_action = QAction("显示窗口", self)
+        show_action.triggered.connect(self.showNormal)
+        tray_menu.addAction(show_action)
+        
+        # 最小化到托盘动作
+        minimize_action = QAction("最小化到托盘", self)
+        minimize_action.triggered.connect(self.hide)
+        tray_menu.addAction(minimize_action)
+        
+        # 添加分隔符
+        tray_menu.addSeparator()
+        
+        # 退出动作
+        quit_action = QAction("退出", self)
+        quit_action.triggered.connect(self.forceQuit)
+        tray_menu.addAction(quit_action)
+        
+        # 设置托盘菜单
+        self.tray_icon.setContextMenu(tray_menu)
+        
+        # 连接双击事件
+        self.tray_icon.activated.connect(self.onTrayIconActivated)
+        
+        # 显示托盘图标
+        self.tray_icon.show()
+        
+        print("[日志] 系统托盘初始化完成")
+    
+    def onTrayIconActivated(self, reason):
+        """处理托盘图标激活事件"""
+        print(f"[日志] 托盘图标激活: {reason}")
+        # 单击或双击都显示/隐藏窗口
+        if reason in [QSystemTrayIcon.DoubleClick, QSystemTrayIcon.Trigger]:
+            # 单击或双击显示/隐藏窗口
+            if self.isVisible():
+                self.hide()
+                print("[日志] 隐藏窗口到系统托盘")
+            else:
+                self.showNormal()
+                self.activateWindow()
+                print("[日志] 从系统托盘显示窗口")
+        # 右键点击显示上下文菜单（这是默认行为，不需要额外处理）
+    
+    def forceQuit(self):
+        """强制退出应用程序"""
+        print("[日志] 强制退出应用程序")
+        
+        # 如果有下载正在进行，询问是否停止
+        if self.download_thread and self.download_thread.isRunning():
+            print("[日志] 下载正在进行中，询问用户")
+            reply = QMessageBox.question(self, "确认", "下载正在进行中，是否停止并退出？",
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            
+            if reply == QMessageBox.Yes:
+                print("[日志] 用户选择停止下载并退出")
+                # 停止下载线程
+                self.download_thread.stop()
+                self.download_thread.wait(5000)  # 等待最多5秒
+                
+                # 如果线程仍在运行，强制终止
+                if self.download_thread.isRunning():
+                    print("[日志] 下载线程未正常停止，强制终止")
+                    self.download_thread.terminate()
+                    self.download_thread.wait(2000)  # 再等待2秒
+                
+                # 清理资源
+                self.download_thread = None
+                
+                # 确保所有子进程都被终止
+                try:
+                    import psutil
+                    current_process = psutil.Process()
+                    children = current_process.children(recursive=True)
+                    for child in children:
+                        try:
+                            child.terminate()
+                            child.wait(timeout=3)
+                        except:
+                            try:
+                                child.kill()
+                            except:
+                                pass
+                except ImportError:
+                    # 如果没有psutil，使用其他方法
+                    if sys.platform == 'win32':
+                        import subprocess
+                        try:
+                            # 获取当前进程ID
+                            pid = os.getpid()
+                            # 使用taskkill终止所有子进程
+                            subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], 
+                                          shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except:
+                            pass
+                
+                # 退出应用程序
+                QApplication.quit()
+            else:
+                print("[日志] 用户选择取消退出")
+                return
+        else:
+            print("[日志] 没有正在进行的下载，直接退出")
+            # 退出应用程序
+            QApplication.quit()
     
     def initUI(self):
         print("[日志] 开始初始化UI...")
@@ -1768,6 +1898,18 @@ class MainWindow(QMainWindow):
         self.category_group.setLayout(category_layout)
         self.category_group.setEnabled(False)
         left_layout.addWidget(self.category_group)
+        
+        # 壁纸比例设置
+        self.ratio_group = QGroupBox("壁纸比例")
+        ratio_layout = QFormLayout()
+        
+        # 壁纸比例选择
+        self.ratio_combo = HoverableComboBox()
+        self.ratio_combo.addItems(["全部", "横向壁纸", "纵向壁纸", "正方形壁纸", "自定义比例"])
+        ratio_layout.addRow("壁纸比例:", self.ratio_combo)
+        
+        self.ratio_group.setLayout(ratio_layout)
+        left_layout.addWidget(self.ratio_group)
         
         # 搜索设置
         self.search_group = QGroupBox("搜索设置")
@@ -1887,7 +2029,7 @@ class MainWindow(QMainWindow):
         
         # 创建退出按钮
         self.exit_btn = GlassButton("退出")
-        self.exit_btn.clicked.connect(self.close)  # 连接到窗口关闭事件
+        self.exit_btn.clicked.connect(self.forceQuit)  # 连接到强制退出方法，确保所有进程都被终止
         bottom_layout.addWidget(self.exit_btn)
         
         main_layout.addLayout(bottom_layout)
@@ -1970,6 +2112,9 @@ class MainWindow(QMainWindow):
         self.category_group.setEnabled(category_enabled)
         self.search_group.setEnabled(search_enabled)
         
+        # 壁纸比例选项在所有下载模式下都可用
+        print(f"[日志] 壁纸比例选项始终可用")
+        
         # 保存下载方式设置
         if category_enabled:
             self.settings["download_method"] = "category"
@@ -2034,13 +2179,38 @@ class MainWindow(QMainWindow):
             ctag = category_codes.get(category, "111")
             ptag = purity_codes.get(purity, "100")
             
-            self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&categories={ctag}&purity={ptag}&page="
+            # 获取壁纸比例参数
+            ratio_index = self.ratio_combo.currentIndex()
+            ratios_param = ""
+            if ratio_index == 1:  # 横向壁纸
+                ratios_param = "&ratios=16x9,32x9,21x9"
+            elif ratio_index == 2:  # 纵向壁纸
+                ratios_param = "&ratios=9x16,9x18"
+            elif ratio_index == 3:  # 正方形壁纸
+                ratios_param = "&ratios=1x1"
+            elif ratio_index == 4:  # 自定义比例，可以添加更多选项
+                ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
+            
+            self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&categories={ctag}&purity={ptag}{ratios_param}&page="
             print(f"[日志] 构建类别下载URL: {self.base_url}")
         
         elif self.latest_radio.isChecked():
             # 最新下载
             top_list_range = "1M"
-            self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&topRange={top_list_range}&sorting=toplist&page="
+            
+            # 获取壁纸比例参数
+            ratio_index = self.ratio_combo.currentIndex()
+            ratios_param = ""
+            if ratio_index == 1:  # 横向壁纸
+                ratios_param = "&ratios=16x9,32x9,21x9"
+            elif ratio_index == 2:  # 纵向壁纸
+                ratios_param = "&ratios=9x16,9x18"
+            elif ratio_index == 3:  # 正方形壁纸
+                ratios_param = "&ratios=1x1"
+            elif ratio_index == 4:  # 自定义比例，可以添加更多选项
+                ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
+            
+            self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&topRange={top_list_range}&sorting=toplist{ratios_param}&page="
             print(f"[日志] 构建最新下载URL: {self.base_url}")
         
         elif self.search_radio.isChecked():
@@ -2049,7 +2219,20 @@ class MainWindow(QMainWindow):
             print(f"[日志] 搜索下载，关键词: {query}")
             if query:
                 encoded_query = urllib.parse.quote_plus(query)
-                self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&q={encoded_query}&page="
+                
+                # 获取壁纸比例参数
+                ratio_index = self.ratio_combo.currentIndex()
+                ratios_param = ""
+                if ratio_index == 1:  # 横向壁纸
+                    ratios_param = "&ratios=16x9,32x9,21x9"
+                elif ratio_index == 2:  # 纵向壁纸
+                    ratios_param = "&ratios=9x16,9x18"
+                elif ratio_index == 3:  # 正方形壁纸
+                    ratios_param = "&ratios=1x1"
+                elif ratio_index == 4:  # 自定义比例，可以添加更多选项
+                    ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
+                
+                self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&q={encoded_query}{ratios_param}&page="
                 print(f"[日志] 构建搜索下载URL: {self.base_url}")
             else:
                 print(f"[日志] 搜索关键词为空")
@@ -2293,27 +2476,81 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """关闭窗口事件"""
         print(f"[日志] 关闭窗口事件")
-        # 如果有下载正在进行，询问是否停止
-        if self.download_thread and self.download_thread.isRunning():
-            print(f"[日志] 下载正在进行中，询问用户")
-            reply = QMessageBox.question(self, "确认", "下载正在进行中，是否停止并退出？",
-                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        
+        # 在Windows系统中，点击关闭按钮时最小化到系统托盘
+        if sys.platform == 'win32':
+            print(f"[日志] Windows系统，最小化到系统托盘")
             
-            if reply == QMessageBox.Yes:
-                print(f"[日志] 用户选择停止下载并退出")
-                # 停止下载线程
-                self.download_thread.stop()
-                self.download_thread.wait(5000)  # 等待最多5秒
+            # 如果有下载正在进行，显示提示
+            if self.download_thread and self.download_thread.isRunning():
+                print(f"[日志] 下载正在进行中，显示提示")
+                self.tray_icon.showMessage(
+                    "下载正在进行中",
+                    "Wallhaven壁纸下载器已最小化到系统托盘，下载任务仍在继续。",
+                    QSystemTrayIcon.Information,
+                    3000  # 显示3秒
+                )
+            
+            # 隐藏窗口而不是关闭
+            self.hide()
+            event.ignore()
+            print(f"[日志] 窗口已隐藏到系统托盘")
+        else:
+            # 非Windows系统，使用原来的逻辑
+            # 如果有下载正在进行，询问是否停止
+            if self.download_thread and self.download_thread.isRunning():
+                print(f"[日志] 下载正在进行中，询问用户")
+                reply = QMessageBox.question(self, "确认", "下载正在进行中，是否停止并退出？",
+                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 
-                # 如果线程仍在运行，强制终止
-                if self.download_thread.isRunning():
-                    print(f"[日志] 下载线程未正常停止，强制终止")
-                    self.download_thread.terminate()
-                    self.download_thread.wait(2000)  # 再等待2秒
-                
-                # 清理资源
-                self.download_thread = None
-                
+                if reply == QMessageBox.Yes:
+                    print(f"[日志] 用户选择停止下载并退出")
+                    # 停止下载线程
+                    self.download_thread.stop()
+                    self.download_thread.wait(5000)  # 等待最多5秒
+                    
+                    # 如果线程仍在运行，强制终止
+                    if self.download_thread.isRunning():
+                        print(f"[日志] 下载线程未正常停止，强制终止")
+                        self.download_thread.terminate()
+                        self.download_thread.wait(2000)  # 再等待2秒
+                    
+                    # 清理资源
+                    self.download_thread = None
+                    
+                    # 确保所有子进程都被终止
+                    try:
+                        import psutil
+                        current_process = psutil.Process()
+                        children = current_process.children(recursive=True)
+                        for child in children:
+                            try:
+                                child.terminate()
+                                child.wait(timeout=3)
+                            except:
+                                try:
+                                    child.kill()
+                                except:
+                                    pass
+                    except ImportError:
+                        # 如果没有psutil，使用其他方法
+                        if sys.platform == 'win32':
+                            import subprocess
+                            try:
+                                # 获取当前进程ID
+                                pid = os.getpid()
+                                # 使用taskkill终止所有子进程
+                                subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], 
+                                              shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            except:
+                                pass
+                    
+                    event.accept()
+                else:
+                    print(f"[日志] 用户选择取消退出")
+                    event.ignore()
+            else:
+                print(f"[日志] 没有正在进行的下载，直接退出")
                 # 确保所有子进程都被终止
                 try:
                     import psutil
@@ -2342,39 +2579,6 @@ class MainWindow(QMainWindow):
                             pass
                 
                 event.accept()
-            else:
-                print(f"[日志] 用户选择取消退出")
-                event.ignore()
-        else:
-            print(f"[日志] 没有正在进行的下载，直接退出")
-            # 确保所有子进程都被终止
-            try:
-                import psutil
-                current_process = psutil.Process()
-                children = current_process.children(recursive=True)
-                for child in children:
-                    try:
-                        child.terminate()
-                        child.wait(timeout=3)
-                    except:
-                        try:
-                            child.kill()
-                        except:
-                            pass
-            except ImportError:
-                # 如果没有psutil，使用其他方法
-                if sys.platform == 'win32':
-                    import subprocess
-                    try:
-                        # 获取当前进程ID
-                        pid = os.getpid()
-                        # 使用taskkill终止所有子进程
-                        subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], 
-                                      shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    except:
-                        pass
-            
-            event.accept()
     
     def loadDownloadSettings(self):
         """加载下载设置"""
@@ -2418,11 +2622,19 @@ class MainWindow(QMainWindow):
         self.page_count_spin.setValue(page_count)
         print(f"[日志] 设置下载页数: {page_count}")
         
+        # 加载壁纸比例设置
+        wallpaper_ratio = self.settings.get("wallpaper_ratio", "全部")
+        index = self.ratio_combo.findText(wallpaper_ratio)
+        if index >= 0:
+            self.ratio_combo.setCurrentIndex(index)
+            print(f"[日志] 设置壁纸比例: {wallpaper_ratio}")
+        
         # 连接信号以保存设置变化
         self.category_combo.currentTextChanged.connect(self.onCategoryChanged)
         self.purity_combo.currentTextChanged.connect(self.onPurityChanged)
         self.search_edit.textChanged.connect(self.onSearchQueryChanged)
         self.page_count_spin.valueChanged.connect(self.onPageCountChanged)
+        self.ratio_combo.currentTextChanged.connect(self.onWallpaperRatioChanged)
         
         print(f"[日志] 下载设置加载完成")
     
@@ -2448,6 +2660,10 @@ class MainWindow(QMainWindow):
         # 保存下载页数
         self.settings["page_count"] = self.page_count_spin.value()
         print(f"[日志] 保存下载页数: {self.settings['page_count']}")
+        
+        # 保存壁纸比例设置
+        self.settings["wallpaper_ratio"] = self.ratio_combo.currentText()
+        print(f"[日志] 保存壁纸比例: {self.settings['wallpaper_ratio']}")
         
         # 保存设置到文件
         self.saveSettings()
@@ -2477,4 +2693,10 @@ class MainWindow(QMainWindow):
         """下载页数变化事件"""
         print(f"[日志] 下载页数变化: {value}")
         self.settings["page_count"] = value
+        self.saveSettings()
+    
+    def onWallpaperRatioChanged(self, value):
+        """壁纸比例变化事件"""
+        print(f"[日志] 壁纸比例变化: {value}")
+        self.settings["wallpaper_ratio"] = value
         self.saveSettings()
