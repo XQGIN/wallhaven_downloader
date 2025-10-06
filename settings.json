@@ -1,5 +1,5 @@
 {
-    "api_key": "dws2O4u6Agr4v1CC92mH90H1T49QSuTM",
+    "api_key": "kL0nN1HsEx292Dl7yucAPCAA0dRntRlN",
     "theme": "浅色",
     "glass_transparency": 200,
     "images_per_page": 64,
@@ -12,5 +12,7 @@
     "search_query": "",
     "page_count": 100,
     "concurrent_downloads": 3,
-    "wallpaper_ratio": "纵向壁纸"
+    "wallpaper_ratio": "全部",
+    "start_page": 1014,
+    "show_filename": false
 }
