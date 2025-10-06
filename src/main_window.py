@@ -46,9 +46,10 @@ class WallpaperDownloadThread(QThread):
     image_downloaded = pyqtSignal(str, QPixmap)  # 图片下载完成信号 (文件路径, 图片)
     duplicate_detected = pyqtSignal(int, int)  # 检测到重复文件信号 (重复数量, 总数量)
     
-    def __init__(self, base_url, page_count, download_dir, parent=None, resume_state=None, concurrent_downloads=3):
+    def __init__(self, base_url, start_page, page_count, download_dir, parent=None, resume_state=None, concurrent_downloads=3):
         super().__init__(parent)
         self.base_url = base_url
+        self.start_page = start_page  # 添加起始页数参数
         self.page_count = page_count
         self.download_dir = download_dir
         self.is_running = True
@@ -68,7 +69,7 @@ class WallpaperDownloadThread(QThread):
         
         # 恢复下载状态
         self.resume_state = resume_state or {}
-        self.current_page = self.resume_state.get('current_page', 1)
+        self.current_page = self.resume_state.get('current_page', self.start_page)  # 使用起始页数作为默认值
         # 确保从JSON读取的列表转换为集合
         processed_urls = self.resume_state.get('processed_urls', set())
         downloaded_files = self.resume_state.get('downloaded_files', set())
@@ -119,12 +120,12 @@ class WallpaperDownloadThread(QThread):
             if not self.is_running:
                 return None
                 
-            print(f"[日志] 下载图片: {img_filename}")
+            
             file_path = os.path.join(self.download_dir, img_filename)
             
             # 检查文件是否已存在
             if os.path.exists(file_path):
-                print(f"[日志] 文件已存在，跳过下载: {img_filename}")
+                
                 self.skipped_count += 1
                 return (file_path, None, True)
             
@@ -179,20 +180,20 @@ class WallpaperDownloadThread(QThread):
                                 scaled_pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                                 return (file_path, scaled_pixmap, True)
                             else:
-                                print(f"[日志] 创建预览失败: {img_filename}")
+                                
                                 return (file_path, None, True)
                         except Exception as e:
-                            print(f"[日志] 加载预览图片失败: {e}")
+                            
                             return (file_path, None, True)
                     elif imgreq.status_code in [403, 404]:
                         # 无权限或不存在，直接跳过
-                        print(f"[日志] 跳过下载: {img_filename}, 状态码: {imgreq.status_code}")
+                        
                         self.skipped_count += 1
                         return (img_filename, None, False)
                     else:
                         retry_count += 1
                         wait_time = min(2 ** retry_count, 10)  # 指数退避，最大等待10秒
-                        print(f"[日志] 下载图片失败: {img_filename}, 状态码: {imgreq.status_code}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
+                        
                         time.sleep(wait_time)
                         
                 except (requests.exceptions.ConnectionError, 
@@ -200,16 +201,13 @@ class WallpaperDownloadThread(QThread):
                         requests.exceptions.ChunkedEncodingError) as e:
                     retry_count += 1
                     wait_time = min(2 ** retry_count, 10)
-                    print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
                     time.sleep(wait_time)
                 except Exception as e:
                     retry_count += 1
                     wait_time = min(2 ** retry_count, 10)
-                    print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}, {wait_time}秒后重试 ({retry_count}/{max_retries})")
                     time.sleep(wait_time)
             
             if not success:
-                print(f"[日志] 下载图片失败: {img_filename}, 已尝试 {max_retries} 次")
                 self.failed_count += 1
                 # 如果下载失败，删除可能存在的不完整文件
                 if os.path.exists(file_path):
@@ -220,7 +218,6 @@ class WallpaperDownloadThread(QThread):
                 return (img_filename, None, False)
                 
         except Exception as e:
-            print(f"[日志] 下载图片异常: {img_filename}, 错误: {e}")
             self.failed_count += 1
             return (img_filename, None, False)
     
@@ -234,9 +231,8 @@ class WallpaperDownloadThread(QThread):
             # 尝试加载之前的下载状态
             if self.is_resuming:
                 if self.load_download_state():
-                    print(f"[日志] 成功加载之前的下载状态，将从第 {self.current_page} 页继续下载")
+                    pass
                 else:
-                    print(f"[日志] 未找到有效的下载状态，将从头开始下载")
                     self.is_resuming = False
             
             # 检查已存在的文件
@@ -244,8 +240,6 @@ class WallpaperDownloadThread(QThread):
             for filename in os.listdir(self.download_dir):
                 if filename.startswith("wallhaven-") and (filename.endswith(".jpg") or filename.endswith(".png")):
                     existing_files.add(filename)
-            
-            print(f"[日志] 下载目录中已存在 {len(existing_files)} 个文件")
             
             # 初始化计数器
             if not self.is_resuming:
@@ -257,19 +251,18 @@ class WallpaperDownloadThread(QThread):
                 self.failed_count = 0
                 self.skipped_count = 0
             
-            # 如果是恢复下载，从上次中断的页面开始
-            start_page = self.current_page if self.is_resuming else 1
+            # 如果是恢复下载，从上次中断的页面开始，否则从指定的起始页数开始
+            start_page = self.current_page if self.is_resuming else self.start_page
             
-            # 使用线程池并发下载图片
+            # 使用线程池并发下载图片 - 增加并发数以提高下载速度
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.concurrent_downloads) as executor:
                 # 逐页获取并下载图片 - 使用test.py中的优化逻辑
-                for page_id in range(start_page, self.page_count + 1):
+                for page_id in range(start_page, start_page + self.page_count):
                     if not self.is_running:
                         break
                     
                     # 获取页面数据 - 添加超时和重试机制
                     url = self.base_url + str(page_id)
-                    print(f"[日志] 获取页面 {page_id}: {url}")
                     retry_count = 0
                     max_retries = 3
                     success = False
@@ -335,21 +328,21 @@ class WallpaperDownloadThread(QThread):
                                                     self.download_failed.emit(f"下载图片失败: {file_path}")
                                                     continue
                                         except Exception as e:
-                                            print(f"[日志] 处理下载结果异常: {e}")
                                             continue
                                     else:
                                         self.duplicate_images += 1
                                         self.skipped_count += 1
-                                        print(f"[日志] 检测到重复文件: {filename}")
                                     
                                     # 更新进度 - 将重复文件也计入进度
                                     processed_images = self.downloaded_images + self.duplicate_images
-                                    progress = min(100, int((processed_images / (self.page_count * 64)) * 100))
+                                    # 计算当前页在总页数范围内的相对位置
+                                    current_relative_page = page_id - start_page + 1
+                                    progress = min(100, int(((current_relative_page - 1) * 64 + processed_images) / (self.page_count * 64) * 100))
                                     self.progress_updated.emit(progress, filename)
                                     
                                     page_image_count += 1
                                     
-                                    # 添加动态延迟，避免请求过于频繁
+                                    # 减少延迟时间以提高下载速度
                                     if not self.is_running:
                                         break
                                         
@@ -358,15 +351,13 @@ class WallpaperDownloadThread(QThread):
                                     if total_processed > 10:  # 在处理了一定数量后才计算失败率
                                         failure_rate = self.failed_count / total_processed
                                         if failure_rate > 0.3:  # 失败率超过30%
-                                            time.sleep(0.5)  # 增加延迟到500毫秒
+                                            time.sleep(0.2)  # 减少延迟到200毫秒
                                         elif failure_rate > 0.1:  # 失败率超过10%
-                                            time.sleep(0.3)  # 增加延迟到300毫秒
+                                            time.sleep(0.1)  # 减少延迟到100毫秒
                                         else:
-                                            time.sleep(0.1)  # 默认100毫秒延迟
+                                            time.sleep(0.05)  # 减少默认延迟到50毫秒
                                     else:
-                                        time.sleep(0.1)  # 默认100毫秒延迟
-                                
-                                print(f"[日志] 页面 {page_id} 处理完成，共 {page_image_count} 张图片，下载 {page_download_count} 张新图片")
+                                        time.sleep(0.05)  # 减少默认延迟到50毫秒
                                 
                                 # 每完成一页保存一次状态
                                 self.save_download_state()
@@ -377,19 +368,16 @@ class WallpaperDownloadThread(QThread):
                             else:
                                 retry_count += 1
                                 wait_time = min(2 ** retry_count, 10)  # 指数退避，最大等待10秒
-                                print(f"[日志] 获取页面 {page_id} 失败，状态码: {urlreq.status_code}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
                                 time.sleep(wait_time)
                         except (requests.exceptions.ConnectionError, 
                                 requests.exceptions.Timeout,
                                 requests.exceptions.ChunkedEncodingError) as e:
                             retry_count += 1
                             wait_time = min(2 ** retry_count, 10)
-                            print(f"[日志] 获取页面 {page_id} 异常: {e}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
                             time.sleep(wait_time)
                         except Exception as e:
                             retry_count += 1
                             wait_time = min(2 ** retry_count, 10)
-                            print(f"[日志] 获取页面 {page_id} 异常: {e}，{wait_time}秒后重试 ({retry_count}/{max_retries})")
                             time.sleep(wait_time)
                     
                     if not success:
@@ -397,21 +385,19 @@ class WallpaperDownloadThread(QThread):
                         return
             
             # 下载完成
-            print(f"[日志] 下载完成，总共处理 {self.total_images} 张图片")
-            print(f"[日志] 成功下载: {self.success_count} 张, 失败: {self.failed_count} 张, 跳过: {self.skipped_count} 张")
+            pass
             if self.duplicate_images > 0:
-                print(f"[日志] 共检测到 {self.duplicate_images} 个重复文件")
+                pass
             else:
-                print(f"[日志] 未检测到重复文件")
+                pass
             
             # 下载完成后删除状态文件
             try:
                 state_file = os.path.join(self.download_dir, 'download_state.json')
                 if os.path.exists(state_file):
                     os.remove(state_file)
-                    print(f"[日志] 下载状态文件已删除")
             except Exception as e:
-                print(f"[日志] 删除下载状态文件失败: {e}")
+                pass
             
             self.download_completed.emit()
         except Exception as e:
@@ -419,11 +405,11 @@ class WallpaperDownloadThread(QThread):
     
     def stop(self):
         """停止下载并保存当前状态"""
-        print(f"[日志] 停止下载线程")
         self.is_running = False
         
         # 保存当前下载状态，以便恢复 - 将set转换为list以支持JSON序列化
         resume_state = {
+            'start_page': self.start_page,  # 保存起始页数
             'current_page': self.current_page,
             'processed_urls': list(self.processed_urls),  # 将set转换为list
             'downloaded_files': list(self.downloaded_files),  # 将set转换为list
@@ -442,9 +428,8 @@ class WallpaperDownloadThread(QThread):
             state_file = os.path.join(self.download_dir, '.download_state.json')
             with open(state_file, 'w', encoding='utf-8') as f:
                 json.dump(resume_state, f, ensure_ascii=False, indent=2)
-            print(f"[日志] 下载状态已保存到: {state_file}")
         except Exception as e:
-            print(f"[日志] 保存下载状态失败: {e}")
+            pass
         
         # 发送状态保存信号
         if hasattr(self, 'state_saved'):
@@ -453,6 +438,7 @@ class WallpaperDownloadThread(QThread):
     def save_download_state(self):
         """保存下载状态，以便在程序中断后可以恢复下载"""
         state = {
+            'start_page': self.start_page,
             'current_page': self.current_page,
             'downloaded_files': list(self.downloaded_files),
             'success_count': self.success_count,
@@ -468,9 +454,8 @@ class WallpaperDownloadThread(QThread):
         try:
             with open(os.path.join(self.download_dir, 'download_state.json'), 'w', encoding='utf-8') as f:
                 json.dump(state, f, ensure_ascii=False, indent=2)
-            print(f"[日志] 下载状态已保存")
         except Exception as e:
-            print(f"[日志] 保存下载状态失败: {e}")
+            pass
     
     def load_download_state(self):
         """加载下载状态，以便恢复下载"""
@@ -482,7 +467,8 @@ class WallpaperDownloadThread(QThread):
             with open(state_file, 'r', encoding='utf-8') as f:
                 state = json.load(f)
             
-            self.current_page = state.get('current_page', 1)
+            self.start_page = state.get('start_page', 1)
+            self.current_page = state.get('current_page', self.start_page)
             self.downloaded_files = set(state.get('downloaded_files', []))
             self.success_count = state.get('success_count', 0)
             self.failed_count = state.get('failed_count', 0)
@@ -496,15 +482,12 @@ class WallpaperDownloadThread(QThread):
             if timestamp:
                 try:
                     saved_time = datetime.fromisoformat(timestamp)
-                    print(f"[日志] 加载下载状态成功，上次保存时间: {saved_time}")
+                    pass
                 except:
-                    print(f"[日志] 加载下载状态成功，上次保存时间: {timestamp}")
-            else:
-                print(f"[日志] 加载下载状态成功")
+                    pass
             
             return True
         except Exception as e:
-            print(f"[日志] 加载下载状态失败: {e}")
             return False
 
 class GlassEffectWidget(QWidget):
@@ -636,25 +619,47 @@ class GlassEffectWidget(QWidget):
         self._needs_background_update = True
         self.update()
 
-class ImagePreviewWidget(QListWidget):
+class ImagePreviewWidget(QWidget):
     """图片预览部件"""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setViewMode(QListWidget.IconMode)
-        self.setMovement(QListWidget.Static)
-        self.setResizeMode(QListWidget.Adjust)
-        self.setUniformItemSizes(True)
-        self.setWrapping(True)
-        self.setSpacing(10)
-        self.setIconSize(QSize(200, 200))
-        self.setTextElideMode(Qt.ElideRight)
-        self.setWordWrap(True)
-        self.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
-        # 设置样式
-        self.setStyleSheet("""
+        # 创建主布局
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(5)
+        
+        # 创建下载数量标签
+        self.download_count_label = QLabel("已下载: 0 张")
+        self.download_count_label.setStyleSheet("""
+            QLabel {
+                background-color: rgba(255, 255, 255, 100);
+                border: 1px solid rgba(200, 200, 200, 100);
+                border-radius: 5px;
+                padding: 5px;
+                margin: 5px;
+                font-weight: bold;
+            }
+        """)
+        self.download_count_label.setAlignment(Qt.AlignCenter)
+        
+        # 创建图片列表控件
+        self.image_list = QListWidget()
+        self.image_list.setViewMode(QListWidget.IconMode)
+        self.image_list.setMovement(QListWidget.Static)
+        self.image_list.setResizeMode(QListWidget.Adjust)
+        self.image_list.setUniformItemSizes(True)
+        self.image_list.setWrapping(True)
+        self.image_list.setSpacing(10)
+        self.image_list.setIconSize(QSize(200, 200))
+        self.image_list.setTextElideMode(Qt.ElideRight)
+        self.image_list.setWordWrap(True)
+        self.image_list.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.image_list.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.image_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        # 设置图片列表样式
+        self.image_list.setStyleSheet("""
             QListWidget {
                 background-color: rgba(255, 255, 255, 50);
                 border: none;
@@ -679,7 +684,11 @@ class ImagePreviewWidget(QListWidget):
         """)
         
         # 连接双击事件
-        self.itemDoubleClicked.connect(self.showFullImage)
+        self.image_list.itemDoubleClicked.connect(self.showFullImage)
+        
+        # 添加下载数量标签和图片列表到主布局
+        self.main_layout.addWidget(self.download_count_label)
+        self.main_layout.addWidget(self.image_list)
         
     def showFullImage(self, item):
         """显示完整图片"""
@@ -749,31 +758,38 @@ class ImagePreviewWidget(QListWidget):
         else:
             icon_size = QSize(200, 200)  # 默认大小
         
-        # 统一缩放图片到指定大小，保持宽高比
+        # 创建固定大小的透明背景图片
+        fixed_pixmap = QPixmap(icon_size)
+        fixed_pixmap.fill(Qt.transparent)
+        
+        # 计算缩放后的图片大小，保持宽高比
         scaled_pixmap = pixmap.scaled(icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         
-        # 创建列表项
-        item = QListWidgetItem()
+        # 计算居中位置
+        x = (icon_size.width() - scaled_pixmap.width()) // 2
+        y = (icon_size.height() - scaled_pixmap.height()) // 2
         
-        # 为图片添加圆角效果
-        rounded_pixmap = QPixmap(scaled_pixmap.size())
-        rounded_pixmap.fill(Qt.transparent)
-        
-        painter = QPainter(rounded_pixmap)
+        # 创建画家对象
+        painter = QPainter(fixed_pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         
         # 创建圆角路径
         path = QPainterPath()
-        path.addRoundedRect(0, 0, scaled_pixmap.width(), scaled_pixmap.height(), 15, 15)
+        path.addRoundedRect(0, 0, icon_size.width(), icon_size.height(), 15, 15)
         
         # 使用路径裁剪
         painter.setClipPath(path)
-        painter.drawPixmap(0, 0, scaled_pixmap)
+        
+        # 在固定大小的图片上绘制缩放后的图片，居中显示
+        painter.drawPixmap(x, y, scaled_pixmap)
         painter.end()
         
+        # 创建列表项
+        item = QListWidgetItem()
+        
         # 设置图标
-        icon = QIcon(rounded_pixmap)
+        icon = QIcon(fixed_pixmap)
         item.setIcon(icon)
         
         # 不设置文本，只显示图片
@@ -784,10 +800,27 @@ class ImagePreviewWidget(QListWidget):
         item.setData(Qt.UserRole, file_path)
         
         # 添加到列表
-        self.addItem(item)
+        self.image_list.addItem(item)
+        
+        # 更新下载数量显示
+        count = self.image_list.count()
+        self.download_count_label.setText(f"已下载: {count} 张")
         
         # 滚动到底部
-        self.scrollToBottom()
+        self.image_list.scrollToBottom()
+        
+    def count(self):
+        """返回图片数量"""
+        return self.image_list.count()
+        
+    def clear(self):
+        """清除所有图片"""
+        self.image_list.clear()
+        self.download_count_label.setText("已下载: 0 张")
+        
+    def scrollToBottom(self):
+        """滚动到底部"""
+        self.image_list.scrollToBottom()
 
 class HoverableComboBox(QComboBox):
     """下拉框"""
@@ -1593,14 +1626,14 @@ class MainWindow(QMainWindow):
     def loadSettings(self):
         """加载设置"""
         settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "settings.json")
-        print(f"[日志] 开始加载设置，文件路径: {settings_file}")
+        
         
         # 默认设置
         default_settings = {
             "api_key": "dws2O4u6Agr4v1CC92mH90H1T49QSuTM",
             "theme": "浅色",
             "glass_transparency": 200,
-            "images_per_page": 24,
+            "images_per_page": 64,
             "download_timeout": 30,
             "concurrent_downloads": 3,
             "preview_size": "中 (200x200)",
@@ -1619,49 +1652,49 @@ class MainWindow(QMainWindow):
             try:
                 with open(settings_file, 'r', encoding='utf-8') as f:
                     settings = json.load(f)
-                    print(f"[日志] 成功从文件加载设置: {settings}")
+                    
                 
                 # 合并默认设置和加载的设置
                 for key, value in default_settings.items():
                     if key not in settings:
                         settings[key] = value
-                        print(f"[日志] 添加缺失的默认设置: {key} = {value}")
+                        
                 
-                print(f"[日志] 最终设置: {settings}")
+                
                 return settings
             except Exception as e:
-                print(f"[日志] 加载设置失败: {e}")
+                
                 return default_settings
         else:
             # 如果设置文件不存在，创建默认设置文件
-            print(f"[日志] 设置文件不存在，创建默认设置文件")
+            
             try:
                 os.makedirs(os.path.dirname(settings_file), exist_ok=True)
                 with open(settings_file, 'w', encoding='utf-8') as f:
                     json.dump(default_settings, f, indent=4, ensure_ascii=False)
-                print(f"[日志] 成功创建默认设置文件")
+                
             except Exception as e:
-                print(f"[日志] 创建设置文件失败: {e}")
+                pass
             
             return default_settings
     
     def saveSettings(self):
         """保存设置"""
         settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "settings.json")
-        print(f"[日志] 开始保存设置，文件路径: {settings_file}")
+        
         
         try:
             with open(settings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4, ensure_ascii=False)
-            print(f"[日志] 成功保存设置: {self.settings}")
+            
         except Exception as e:
-            print(f"[日志] 保存设置失败: {e}")
+            pass
     
     def applyTheme(self):
         """应用主题"""
-        print(f"[日志] 开始应用主题")
+        
         theme = self.settings.get("theme", "浅色")
-        print(f"[日志] 当前主题: {theme}")
+        
         
         if theme == "深色":
             # 设置深色主题
@@ -1671,7 +1704,7 @@ class MainWindow(QMainWindow):
                     color: #FFFFFF;
                 }
             """)
-            print(f"[日志] 已应用深色主题")
+            
         else:
             # 设置浅色主题
             self.setStyleSheet("""
@@ -1680,37 +1713,37 @@ class MainWindow(QMainWindow):
                     color: #333333;
                 }
             """)
-            print(f"[日志] 已应用浅色主题")
+            
         
         # 应用透明度设置
         transparency = self.settings.get("glass_transparency", 200)
-        print(f"[日志] 玻璃透明度: {transparency}")
+        
         
         # 更新所有玻璃效果部件的透明度
         glass_widgets = self.findChildren(GlassEffectWidget)
-        print(f"[日志] 找到 {len(glass_widgets)} 个玻璃效果部件")
+        
         for widget in glass_widgets:
             widget.setTransparency(transparency)
         
         # 更新所有按钮的透明度
         buttons = self.findChildren(GlassButton)
-        print(f"[日志] 找到 {len(buttons)} 个按钮")
+        
         for widget in buttons:
             widget.setTransparency(transparency)
         
         # 更新所有输入框的透明度
         line_edits = self.findChildren(HoverableLineEdit)
-        print(f"[日志] 找到 {len(line_edits)} 个输入框")
+        
         for widget in line_edits:
             widget.setTransparency(transparency)
     
     def initSystemTray(self):
         """初始化系统托盘"""
-        print("[日志] 初始化系统托盘")
+        
         
         # 检查系统是否支持系统托盘
         if not QSystemTrayIcon.isSystemTrayAvailable():
-            print("[日志] 系统不支持托盘功能")
+            
             return
         
         # 创建系统托盘图标
@@ -1720,11 +1753,11 @@ class MainWindow(QMainWindow):
         icon_path = resource_path("icon/logo.png")
         if os.path.exists(icon_path):
             self.tray_icon.setIcon(QIcon(icon_path))
-            print(f"[日志] 设置托盘图标: {icon_path}")
+            
         else:
             # 如果图标文件不存在，使用默认图标
             self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
-            print("[日志] 使用默认托盘图标")
+            
         
         # 创建托盘菜单
         tray_menu = QMenu()
@@ -1756,42 +1789,42 @@ class MainWindow(QMainWindow):
         # 显示托盘图标
         self.tray_icon.show()
         
-        print("[日志] 系统托盘初始化完成")
+        
     
     def onTrayIconActivated(self, reason):
         """处理托盘图标激活事件"""
-        print(f"[日志] 托盘图标激活: {reason}")
+        
         # 单击或双击都显示/隐藏窗口
         if reason in [QSystemTrayIcon.DoubleClick, QSystemTrayIcon.Trigger]:
             # 单击或双击显示/隐藏窗口
             if self.isVisible():
                 self.hide()
-                print("[日志] 隐藏窗口到系统托盘")
+                
             else:
                 self.showNormal()
                 self.activateWindow()
-                print("[日志] 从系统托盘显示窗口")
+                
         # 右键点击显示上下文菜单（这是默认行为，不需要额外处理）
     
     def forceQuit(self):
         """强制退出应用程序"""
-        print("[日志] 强制退出应用程序")
+        
         
         # 如果有下载正在进行，询问是否停止
         if self.download_thread and self.download_thread.isRunning():
-            print("[日志] 下载正在进行中，询问用户")
+            
             reply = QMessageBox.question(self, "确认", "下载正在进行中，是否停止并退出？",
                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             
             if reply == QMessageBox.Yes:
-                print("[日志] 用户选择停止下载并退出")
+                
                 # 停止下载线程
                 self.download_thread.stop()
                 self.download_thread.wait(5000)  # 等待最多5秒
                 
                 # 如果线程仍在运行，强制终止
                 if self.download_thread.isRunning():
-                    print("[日志] 下载线程未正常停止，强制终止")
+                    
                     self.download_thread.terminate()
                     self.download_thread.wait(2000)  # 再等待2秒
                 
@@ -1828,15 +1861,15 @@ class MainWindow(QMainWindow):
                 # 退出应用程序
                 QApplication.quit()
             else:
-                print("[日志] 用户选择取消退出")
+                
                 return
         else:
-            print("[日志] 没有正在进行的下载，直接退出")
+            
             # 退出应用程序
             QApplication.quit()
     
     def initUI(self):
-        print("[日志] 开始初始化UI...")
+        
         # 创建中央部件
         central_widget = QWidget()
         main_layout = QVBoxLayout(central_widget)
@@ -1844,13 +1877,13 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(20)
 
         # 创建主内容区域
-        print("[日志] 创建主内容区域...")
+        
         content_widget = QWidget()
         content_layout = QHBoxLayout(content_widget)
         content_layout.setSpacing(20)
         
         # 左侧面板 - 下载设置
-        print("[日志] 创建左侧面板...")
+        
         left_panel = GlassEffectWidget()
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(15, 15, 15, 15)
@@ -1927,6 +1960,12 @@ class MainWindow(QMainWindow):
         download_settings_group = QGroupBox("下载设置")
         download_settings_layout = QFormLayout()
         
+        # 起始页数
+        self.start_page_spin = QSpinBox()
+        self.start_page_spin.setRange(1, 999999)  # 设置为很大的数
+        self.start_page_spin.setValue(1)
+        download_settings_layout.addRow("起始页数:", self.start_page_spin)
+        
         # 下载页数
         self.page_count_spin = QSpinBox()
         self.page_count_spin.setRange(1, 999999)  # 设置为很大的数，表示不限页数
@@ -1949,7 +1988,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(download_settings_group)
         
         # 下载按钮
-        print("[日志] 创建下载按钮...")
+        
         self.download_btn = GlassButton("开始下载")
         self.download_btn.setMinimumHeight(50)
         self.download_btn.clicked.connect(self.startDownload)
@@ -1963,7 +2002,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.stop_btn)
         
         # 进度条
-        print("[日志] 创建进度条...")
+        
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         left_layout.addWidget(self.progress_bar)
@@ -1988,7 +2027,7 @@ class MainWindow(QMainWindow):
         self.search_radio.toggled.connect(self.updateDownloadOptions)
         
         # 右侧面板 - 图片预览
-        print("[日志] 创建右侧面板...")
+        
         right_panel = GlassEffectWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(15, 15, 15, 15)
@@ -2000,7 +2039,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(preview_title)
         
         # 图片预览区域
-        print("[日志] 创建图片预览区域...")
+        
         self.image_preview = ImagePreviewWidget()
         right_layout.addWidget(self.image_preview)
         
@@ -2037,15 +2076,15 @@ class MainWindow(QMainWindow):
         # 设置中央部件
         self.setCentralWidget(central_widget)
         
-        print("[日志] UI初始化完成")
+        
         
         # 加载下载设置
-        print("[日志] 加载下载设置...")
+        
         self.loadDownloadSettings()
     
     def showAbout(self):
         """显示关于对话框"""
-        print(f"[日志] 显示关于对话框")
+        
         dialog = QDialog(self)
         dialog.setWindowTitle("关于")
         dialog.setMinimumSize(400, 300)
@@ -2065,7 +2104,7 @@ class MainWindow(QMainWindow):
         glass_layout.addWidget(title_label)
         
         # 版本信息
-        version_label = QLabel("版本 1.0.0")
+        version_label = QLabel("版本 1.1.0")
         version_label.setAlignment(Qt.AlignCenter)
         glass_layout.addWidget(version_label)
         
@@ -2100,60 +2139,60 @@ class MainWindow(QMainWindow):
         ok_btn.setTransparency(transparency)
         
         dialog.exec_()
-        print(f"[日志] 关于对话框已关闭")
+        
     
     def updateDownloadOptions(self):
         """更新下载选项的可用状态"""
-        print(f"[日志] 更新下载选项状态")
+        
         category_enabled = self.category_radio.isChecked()
         search_enabled = self.search_radio.isChecked()
-        print(f"[日志] 类别设置启用: {category_enabled}, 搜索设置启用: {search_enabled}")
+        
         
         self.category_group.setEnabled(category_enabled)
         self.search_group.setEnabled(search_enabled)
         
         # 壁纸比例选项在所有下载模式下都可用
-        print(f"[日志] 壁纸比例选项始终可用")
+        
         
         # 保存下载方式设置
         if category_enabled:
             self.settings["download_method"] = "category"
-            print(f"[日志] 保存下载方式: category")
+            
         elif search_enabled:
             self.settings["download_method"] = "search"
-            print(f"[日志] 保存下载方式: search")
+            
         else:
             self.settings["download_method"] = "latest"
-            print(f"[日志] 保存下载方式: latest")
+            
         
         # 保存设置
         self.saveSettings()
     
     def browseDownloadDir(self):
         """浏览下载目录"""
-        print(f"[日志] 浏览下载目录，当前目录: {self.download_dir_edit.text()}")
+        
         dir_path = QFileDialog.getExistingDirectory(self, "选择下载目录", self.download_dir_edit.text())
         if dir_path:
-            print(f"[日志] 选择新目录: {dir_path}")
+            
             self.download_dir_edit.setText(dir_path)
             # 保存下载目录设置
             self.settings["download_dir"] = dir_path
-            print(f"[日志] 保存下载目录设置: {dir_path}")
+            
             self.saveSettings()
         else:
-            print(f"[日志] 取消选择目录")
+            pass
     
     def buildBaseUrl(self):
         """构建基础URL"""
-        print(f"[日志] 构建基础URL")
+        
         api_key = self.settings.get("api_key", "dws2O4u6Agr4v1CC92mH90H1T49QSuTM")
-        print(f"[日志] 使用API密钥: {api_key[:10]}...")
+        
         
         if self.category_radio.isChecked():
             # 类别下载
             category = self.category_combo.currentText()
             purity = self.purity_combo.currentText()
-            print(f"[日志] 类别下载: 类别={category}, 纯度={purity}")
+            
             
             # 类别代码映射
             category_codes = {
@@ -2192,7 +2231,7 @@ class MainWindow(QMainWindow):
                 ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
             
             self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&categories={ctag}&purity={ptag}{ratios_param}&page="
-            print(f"[日志] 构建类别下载URL: {self.base_url}")
+            
         
         elif self.latest_radio.isChecked():
             # 最新下载
@@ -2211,12 +2250,12 @@ class MainWindow(QMainWindow):
                 ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
             
             self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&topRange={top_list_range}&sorting=toplist{ratios_param}&page="
-            print(f"[日志] 构建最新下载URL: {self.base_url}")
+            
         
         elif self.search_radio.isChecked():
             # 搜索下载
             query = self.search_edit.text().strip()
-            print(f"[日志] 搜索下载，关键词: {query}")
+            
             if query:
                 encoded_query = urllib.parse.quote_plus(query)
                 
@@ -2233,9 +2272,9 @@ class MainWindow(QMainWindow):
                     ratios_param = "&ratios=16x9,9x16,21x9,9x18,1x1"
                 
                 self.base_url = f"https://wallhaven.cc/api/v1/search?apikey={api_key}&q={encoded_query}{ratios_param}&page="
-                print(f"[日志] 构建搜索下载URL: {self.base_url}")
+                
             else:
-                print(f"[日志] 搜索关键词为空")
+                
                 QMessageBox.warning(self, "警告", "请输入搜索关键词")
                 return False
         
@@ -2243,39 +2282,40 @@ class MainWindow(QMainWindow):
     
     def startDownload(self):
         """开始下载"""
-        print(f"[日志] 开始下载")
+        
         
         if self.download_thread and self.download_thread.isRunning():
-            print(f"[日志] 下载正在进行中，先停止当前下载")
+            
             QMessageBox.warning(self, "警告", "下载正在进行中，请先停止当前下载")
             return
         
         # 保存当前下载设置
-        print(f"[日志] 保存当前下载设置")
+        
         self.saveCurrentDownloadSettings()
         
         # 构建基础URL
         if not self.buildBaseUrl():
-            print(f"[日志] 构建基础URL失败")
+            
             return
         
         # 获取下载设置
+        start_page = self.start_page_spin.value()
         page_count = self.page_count_spin.value()
         download_dir = self.download_dir_edit.text()
-        print(f"[日志] 下载设置: 页数={page_count}, 目录={download_dir}")
+        
         
         # 检查下载目录
         if not download_dir:
-            print(f"[日志] 下载目录为空")
+            
             QMessageBox.warning(self, "警告", "请选择下载目录")
             return
         
         # 创建下载目录
         try:
             os.makedirs(download_dir, exist_ok=True)
-            print(f"[日志] 创建/确认下载目录: {download_dir}")
+            
         except Exception as e:
-            print(f"[日志] 创建下载目录失败: {e}")
+            
             QMessageBox.critical(self, "错误", f"创建下载目录失败: {e}")
             return
         
@@ -2284,7 +2324,7 @@ class MainWindow(QMainWindow):
         resume_state = None
         
         if os.path.exists(state_file):
-            print(f"[日志] 发现保存的下载状态文件: {state_file}")
+            
             reply = QMessageBox.question(self, "恢复下载", 
                                        "发现未完成的下载任务，是否要恢复下载？",
                                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
@@ -2293,17 +2333,17 @@ class MainWindow(QMainWindow):
                 try:
                     with open(state_file, 'r', encoding='utf-8') as f:
                         resume_state = json.load(f)
-                    print(f"[日志] 加载下载状态成功: 当前页面={resume_state.get('current_page', 1)}")
+                    
                 except Exception as e:
-                    print(f"[日志] 加载下载状态失败: {e}")
+                    
                     QMessageBox.warning(self, "警告", f"加载下载状态失败: {e}")
             else:
                 # 删除状态文件
                 try:
                     os.remove(state_file)
-                    print(f"[日志] 删除下载状态文件")
+                    
                 except Exception as e:
-                    print(f"[日志] 删除下载状态文件失败: {e}")
+                    pass
         
         # 更新UI状态
         self.download_btn.setEnabled(False)
@@ -2314,61 +2354,61 @@ class MainWindow(QMainWindow):
         
         if resume_state:
             self.status_label.setText("正在恢复下载...")
-            print(f"[日志] 更新UI状态为恢复下载")
+            
         else:
             self.status_label.setText("正在获取图片列表...")
-            print(f"[日志] 更新UI状态为下载中")
+            
         
         # 创建并启动下载线程
-        print(f"[日志] 创建下载线程")
+        
         # 获取并发下载数设置，优先使用恢复状态中的设置
         if resume_state and 'concurrent_downloads' in resume_state:
             concurrent_downloads = resume_state['concurrent_downloads']
-            print(f"[日志] 使用恢复状态中的并发下载数: {concurrent_downloads}")
+            
         else:
             concurrent_downloads = self.settings.get("concurrent_downloads", 3)
-            print(f"[日志] 使用设置中的并发下载数: {concurrent_downloads}")
+            
         
-        self.download_thread = WallpaperDownloadThread(self.base_url, page_count, download_dir, None, resume_state, concurrent_downloads)
+        self.download_thread = WallpaperDownloadThread(self.base_url, start_page, page_count, download_dir, None, resume_state, concurrent_downloads)
         self.download_thread.progress_updated.connect(self.updateProgress)
         self.download_thread.download_completed.connect(self.downloadCompleted)
         self.download_thread.download_failed.connect(self.downloadFailed)
         self.download_thread.image_downloaded.connect(self.imageDownloaded)
         self.download_thread.duplicate_detected.connect(self.onDuplicateDetected)
         self.download_thread.start()
-        print(f"[日志] 下载线程已启动")
+        
     
     def onDuplicateDetected(self, duplicate_count, total_count):
         """处理重复文件检测信号"""
-        print(f"[日志] 检测到重复文件: {duplicate_count}/{total_count}")
+        
         # 更新状态标签，显示重复文件信息
         self.status_label.setText(f"正在获取图片列表... (检测到 {duplicate_count} 个重复文件)")
     
     def stopDownload(self):
         """停止下载"""
-        print(f"[日志] 停止下载")
+        
         if self.download_thread and self.download_thread.isRunning():
-            print(f"[日志] 下载线程正在运行，停止下载")
+            
             self.download_thread.stop()
             self.download_thread.wait()
-            print(f"[日志] 下载线程已停止")
+            
             
             # 更新UI状态
             self.download_btn.setEnabled(True)
             self.stop_btn.setEnabled(False)
             self.progress_bar.setVisible(False)
             self.status_label.setText("下载已停止")
-            print(f"[日志] 更新UI状态为已停止")
+            
             
             # 显示停止后的提示信息
             QMessageBox.information(self, "下载已停止", 
                                   "下载已停止。\n您可以稍后点击'开始下载'按钮继续下载未完成的图片。")
         else:
-            print(f"[日志] 没有正在运行的下载线程")
+            pass
     
     def updateProgress(self, progress, filename):
         """更新下载进度"""
-        print(f"[日志] 更新下载进度: {progress}%, 文件: {filename}")
+        
         # 确保进度不超过100%
         progress = min(100, max(0, progress))
         self.progress_bar.setValue(progress)
@@ -2376,7 +2416,7 @@ class MainWindow(QMainWindow):
     
     def downloadCompleted(self):
         """下载完成"""
-        print(f"[日志] 下载完成")
+        
         
         # 删除下载状态文件（如果存在）
         download_dir = self.download_dir_edit.text()
@@ -2384,9 +2424,9 @@ class MainWindow(QMainWindow):
         if os.path.exists(state_file):
             try:
                 os.remove(state_file)
-                print(f"[日志] 删除下载状态文件: {state_file}")
+                
             except Exception as e:
-                print(f"[日志] 删除下载状态文件失败: {e}")
+                pass
         
         # 更新UI状态
         self.download_btn.setEnabled(True)
@@ -2403,7 +2443,7 @@ class MainWindow(QMainWindow):
     
     def downloadFailed(self, error_msg):
         """下载失败"""
-        print(f"[日志] 下载失败: {error_msg}")
+        
         # 更新UI状态
         self.download_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
@@ -2414,43 +2454,43 @@ class MainWindow(QMainWindow):
     
     def imageDownloaded(self, file_path, pixmap):
         """图片下载完成"""
-        print(f"[日志] 图片下载完成: {file_path}")
+        
         # 添加到预览列表
         self.image_preview.addImage(file_path, pixmap)
     
     def clearPreview(self):
         """清除预览"""
-        print(f"[日志] 清除预览")
+        
         self.image_preview.clear()
     
     def openDownloadDir(self):
         """打开下载目录"""
         download_dir = self.download_dir_edit.text()
-        print(f"[日志] 打开下载目录: {download_dir}")
+        
         if download_dir and os.path.exists(download_dir):
             import subprocess
             if sys.platform == 'win32':
                 subprocess.Popen(['explorer', os.path.normpath(download_dir)])
-                print(f"[日志] 在Windows系统中打开目录")
+                
             elif sys.platform == 'darwin':
                 subprocess.Popen(['open', download_dir])
-                print(f"[日志] 在macOS系统中打开目录")
+                
             else:
                 subprocess.Popen(['xdg-open', download_dir])
-                print(f"[日志] 在Linux系统中打开目录")
+                
         else:
-            print(f"[日志] 下载目录不存在: {download_dir}")
+            
             QMessageBox.warning(self, "警告", f"下载目录不存在: {download_dir}")
     
     def showSettings(self):
         """显示设置对话框"""
-        print(f"[日志] 显示设置对话框")
+        
         dialog = SettingsDialog(self.settings, self)
         if dialog.exec_() == QDialog.Accepted:
-            print(f"[日志] 用户确认设置")
+            
             # 获取新设置
             new_settings = dialog.getSettings()
-            print(f"[日志] 新设置: {new_settings}")
+            
             
             # 更新设置
             self.settings.update(new_settings)
@@ -2464,26 +2504,26 @@ class MainWindow(QMainWindow):
             # 更新预览图片大小
             preview_size = self.settings.get("preview_size", "中 (200x200)")
             if preview_size == "小 (150x150)":
-                self.image_preview.setIconSize(QSize(150, 150))
+                self.image_preview.image_list.setIconSize(QSize(150, 150))
             elif preview_size == "中 (200x200)":
-                self.image_preview.setIconSize(QSize(200, 200))
+                self.image_preview.image_list.setIconSize(QSize(200, 200))
             elif preview_size == "大 (300x300)":
-                self.image_preview.setIconSize(QSize(300, 300))
-            print(f"[日志] 更新预览图片大小: {preview_size}")
+                self.image_preview.image_list.setIconSize(QSize(300, 300))
+            
         else:
-            print(f"[日志] 用户取消设置")
+            pass
     
     def closeEvent(self, event):
         """关闭窗口事件"""
-        print(f"[日志] 关闭窗口事件")
+        
         
         # 在Windows系统中，点击关闭按钮时最小化到系统托盘
         if sys.platform == 'win32':
-            print(f"[日志] Windows系统，最小化到系统托盘")
+            
             
             # 如果有下载正在进行，显示提示
             if self.download_thread and self.download_thread.isRunning():
-                print(f"[日志] 下载正在进行中，显示提示")
+                
                 self.tray_icon.showMessage(
                     "下载正在进行中",
                     "Wallhaven壁纸下载器已最小化到系统托盘，下载任务仍在继续。",
@@ -2494,24 +2534,24 @@ class MainWindow(QMainWindow):
             # 隐藏窗口而不是关闭
             self.hide()
             event.ignore()
-            print(f"[日志] 窗口已隐藏到系统托盘")
+            
         else:
             # 非Windows系统，使用原来的逻辑
             # 如果有下载正在进行，询问是否停止
             if self.download_thread and self.download_thread.isRunning():
-                print(f"[日志] 下载正在进行中，询问用户")
+                
                 reply = QMessageBox.question(self, "确认", "下载正在进行中，是否停止并退出？",
                                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 
                 if reply == QMessageBox.Yes:
-                    print(f"[日志] 用户选择停止下载并退出")
+                    
                     # 停止下载线程
                     self.download_thread.stop()
                     self.download_thread.wait(5000)  # 等待最多5秒
                     
                     # 如果线程仍在运行，强制终止
                     if self.download_thread.isRunning():
-                        print(f"[日志] 下载线程未正常停止，强制终止")
+                        
                         self.download_thread.terminate()
                         self.download_thread.wait(2000)  # 再等待2秒
                     
@@ -2547,10 +2587,10 @@ class MainWindow(QMainWindow):
                     
                     event.accept()
                 else:
-                    print(f"[日志] 用户选择取消退出")
+                    
                     event.ignore()
             else:
-                print(f"[日志] 没有正在进行的下载，直接退出")
+                
                 # 确保所有子进程都被终止
                 try:
                     import psutil
@@ -2582,121 +2622,137 @@ class MainWindow(QMainWindow):
     
     def loadDownloadSettings(self):
         """加载下载设置"""
-        print(f"[日志] 加载下载设置")
+        
         
         # 加载下载方式
         download_method = self.settings.get("download_method", "latest")
-        print(f"[日志] 下载方式: {download_method}")
+        
         
         if download_method == "category":
             self.category_radio.setChecked(True)
-            print(f"[日志] 设置类别下载为选中状态")
+            
         elif download_method == "search":
             self.search_radio.setChecked(True)
-            print(f"[日志] 设置搜索下载为选中状态")
+            
         else:
             self.latest_radio.setChecked(True)
-            print(f"[日志] 设置最新下载为选中状态")
+            
         
         # 加载类别设置
         category = self.settings.get("category", "all")
         index = self.category_combo.findText(category)
         if index >= 0:
             self.category_combo.setCurrentIndex(index)
-            print(f"[日志] 设置类别: {category}")
+            
         
         # 加载纯度设置
         purity = self.settings.get("purity", "sfw")
         index = self.purity_combo.findText(purity)
         if index >= 0:
             self.purity_combo.setCurrentIndex(index)
-            print(f"[日志] 设置纯度: {purity}")
+            
         
         # 加载搜索关键词
         search_query = self.settings.get("search_query", "")
         self.search_edit.setText(search_query)
-        print(f"[日志] 设置搜索关键词: {search_query}")
+        
+        
+        # 加载起始页数
+        start_page = self.settings.get("start_page", 1)
+        self.start_page_spin.setValue(start_page)
+        
         
         # 加载下载页数
         page_count = self.settings.get("page_count", 1)
         self.page_count_spin.setValue(page_count)
-        print(f"[日志] 设置下载页数: {page_count}")
+        
         
         # 加载壁纸比例设置
         wallpaper_ratio = self.settings.get("wallpaper_ratio", "全部")
         index = self.ratio_combo.findText(wallpaper_ratio)
         if index >= 0:
             self.ratio_combo.setCurrentIndex(index)
-            print(f"[日志] 设置壁纸比例: {wallpaper_ratio}")
+            
         
         # 连接信号以保存设置变化
         self.category_combo.currentTextChanged.connect(self.onCategoryChanged)
         self.purity_combo.currentTextChanged.connect(self.onPurityChanged)
         self.search_edit.textChanged.connect(self.onSearchQueryChanged)
+        self.start_page_spin.valueChanged.connect(self.onStartPageChanged)
         self.page_count_spin.valueChanged.connect(self.onPageCountChanged)
         self.ratio_combo.currentTextChanged.connect(self.onWallpaperRatioChanged)
         
-        print(f"[日志] 下载设置加载完成")
+        
     
     def saveCurrentDownloadSettings(self):
         """保存当前下载设置"""
-        print(f"[日志] 保存当前下载设置")
+        
         
         # 保存类别设置
         if self.category_radio.isChecked():
             self.settings["category"] = self.category_combo.currentText()
-            print(f"[日志] 保存类别: {self.settings['category']}")
+            
         
         # 保存纯度设置
         if self.category_radio.isChecked():
             self.settings["purity"] = self.purity_combo.currentText()
-            print(f"[日志] 保存纯度: {self.settings['purity']}")
+            
         
         # 保存搜索关键词
         if self.search_radio.isChecked():
             self.settings["search_query"] = self.search_edit.text()
-            print(f"[日志] 保存搜索关键词: {self.settings['search_query']}")
+            
+        
+        # 保存起始页数
+        self.settings["start_page"] = self.start_page_spin.value()
+        
         
         # 保存下载页数
         self.settings["page_count"] = self.page_count_spin.value()
-        print(f"[日志] 保存下载页数: {self.settings['page_count']}")
+        
         
         # 保存壁纸比例设置
         self.settings["wallpaper_ratio"] = self.ratio_combo.currentText()
-        print(f"[日志] 保存壁纸比例: {self.settings['wallpaper_ratio']}")
+        
         
         # 保存设置到文件
         self.saveSettings()
     
     def onCategoryChanged(self, value):
         """类别变化事件"""
-        print(f"[日志] 类别变化: {value}")
+        
         if self.category_radio.isChecked():
             self.settings["category"] = value
             self.saveSettings()
     
     def onPurityChanged(self, value):
         """纯度变化事件"""
-        print(f"[日志] 纯度变化: {value}")
+        
         if self.category_radio.isChecked():
             self.settings["purity"] = value
             self.saveSettings()
     
     def onSearchQueryChanged(self, value):
         """搜索关键词变化事件"""
-        print(f"[日志] 搜索关键词变化: {value}")
+        
         if self.search_radio.isChecked():
             self.settings["search_query"] = value
             self.saveSettings()
     
+    def onStartPageChanged(self, value):
+        """起始页数变化事件"""
+        
+        self.settings["start_page"] = value
+        self.saveSettings()
+    
     def onPageCountChanged(self, value):
         """下载页数变化事件"""
-        print(f"[日志] 下载页数变化: {value}")
+        
         self.settings["page_count"] = value
         self.saveSettings()
     
     def onWallpaperRatioChanged(self, value):
         """壁纸比例变化事件"""
-        print(f"[日志] 壁纸比例变化: {value}")
+        
         self.settings["wallpaper_ratio"] = value
         self.saveSettings()
