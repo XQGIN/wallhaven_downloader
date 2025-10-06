@@ -15,7 +15,6 @@ from PyQt5.QtGui import QIcon
 
 def cleanup():
     """清理函数，确保程序退出时关闭所有后台进程"""
-    # 强制终止所有子进程
     try:
         import psutil
         current_process = psutil.Process()
@@ -25,22 +24,13 @@ def cleanup():
                 child.terminate()
                 child.wait(timeout=3)
             except:
-                try:
-                    child.kill()
-                except:
-                    pass
+                child.kill()
     except ImportError:
-        # 如果没有psutil，使用其他方法
         if sys.platform == 'win32':
             import subprocess
-            try:
-                # 获取当前进程ID
-                pid = os.getpid()
-                # 使用taskkill终止所有子进程
-                subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], 
-                              shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except:
-                pass
+            pid = os.getpid()
+            subprocess.run(['taskkill', '/F', '/T', '/PID', str(pid)], 
+                          shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def handle_signal(signum, frame):
     """处理信号，确保程序能够优雅退出"""
@@ -59,7 +49,7 @@ def main():
     
     # 设置应用程序信息
     app.setApplicationName("Wallhaven壁纸下载器")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("1.1.0")
     app.setOrganizationName("WallhavenDownloader")
     
     # 设置应用程序图标
@@ -67,15 +57,12 @@ def main():
     
     # 导入主窗口
     try:
-        # 尝试直接导入（适用于开发环境）
         from main_window import MainWindow
     except ImportError:
-        # 尝试从src包导入（适用于打包后的环境）
         try:
             import src.main_window as main_window_module
             MainWindow = main_window_module.MainWindow
         except ImportError:
-            # 最后的尝试：使用绝对路径导入
             import importlib.util
             main_window_path = os.path.join(os.path.dirname(__file__), 'src', 'main_window.py')
             spec = importlib.util.spec_from_file_location("main_window", main_window_path)
@@ -86,7 +73,6 @@ def main():
     
     # 创建主窗口
     window = MainWindow()
-    # 设置窗口图标
     window.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'icon', 'logo.png')))
     window.show()
     
