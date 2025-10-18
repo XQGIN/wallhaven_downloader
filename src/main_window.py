@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import os
 import sys
 import json
@@ -26,7 +25,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
     return os.path.join(base_path, relative_path)
-
+from font_manager import FontManager
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, QPoint, QRect, QTimer
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen, QFont, QImage, QLinearGradient, QRadialGradient, QPainterPath
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -97,10 +96,8 @@ class WallpaperDownloadThread(QThread):
             pool_connections=10,  # 连接池大小
             pool_maxsize=20
         )
-        
         session.mount("http://", adapter)
         session.mount("https://", adapter)
-        
         # 设置请求头，模拟浏览器
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -111,21 +108,15 @@ class WallpaperDownloadThread(QThread):
             'Upgrade-Insecure-Requests': '1',
             'Referer': 'https://wallhaven.cc/'
         })
-        
         return session
-        
     def download_single_image(self, img_url, img_filename):
         """下载单个图片 - 使用test.py中的优化逻辑"""
         try:
             if not self.is_running:
-                return None
-                
-            
+                return None      
             file_path = os.path.join(self.download_dir, img_filename)
-            
             # 检查文件是否已存在
             if os.path.exists(file_path):
-                
                 self.skipped_count += 1
                 return (file_path, None, True)
             
@@ -224,10 +215,8 @@ class WallpaperDownloadThread(QThread):
     def run(self):
         try:
             # 创建下载目录
-            os.makedirs(self.download_dir, exist_ok=True)
-            
-            start_time = datetime.now()
-            
+            os.makedirs(self.download_dir, exist_ok=True)           
+            start_time = datetime.now()            
             # 尝试加载之前的下载状态
             if self.is_resuming:
                 if self.load_download_state():
@@ -2087,7 +2076,7 @@ class MainWindow(QMainWindow):
         
         dialog = QDialog(self)
         dialog.setWindowTitle("关于")
-        dialog.setMinimumSize(400, 300)
+        dialog.setMinimumSize(1200, 1000)
         
         layout = QVBoxLayout(dialog)
         
@@ -2095,36 +2084,45 @@ class MainWindow(QMainWindow):
         glass_container = GlassEffectWidget(dialog)
         glass_layout = QVBoxLayout(glass_container)
         glass_layout.setContentsMargins(20, 20, 20, 20)
-        glass_layout.setSpacing(15)
+        glass_layout.setSpacing(10)
+        
+        # 加载自定义字体
+        from PyQt5.QtGui import QFontDatabase
+        font_id = QFontDatabase.addApplicationFont(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'font', 'NanoByongGyeHei-Regular.ttf'))
+        font_family = "NanoByongGyeHei-Regular"
+        if font_id != -1:
+            font_families = QFontDatabase.applicationFontFamilies(font_id)
+            if font_families:
+                font_family = font_families[0]
         
         # 应用标题
         title_label = QLabel("Wallhaven壁纸下载器")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setFont(QFont("", 16, QFont.Bold))
+        title_label.setFont(QFont(font_family, 16, QFont.Bold))
         glass_layout.addWidget(title_label)
         
         # 版本信息
         version_label = QLabel("版本 1.1.0")
         version_label.setAlignment(Qt.AlignCenter)
         glass_layout.addWidget(version_label)
-        
-        # 作者信息
-        author_label = QLabel("作者: XQGIN")
-        author_label.setAlignment(Qt.AlignCenter)
-        glass_layout.addWidget(author_label)
-        
+              
         # GitHub链接
-        github_link = QLabel("<a href='https://github.com/XQGIN'>https://github.com/XQGIN</a>")
+        github_link = QLabel("作者: XQGIN<br><a style='color: #1890FF; text-decoration: none; font-weight: 500; transition: color 0.3s ease;' href='https://github.com/XQGIN' onmouseover=\"this.style.color='#096dd9';\" onmouseout=\"this.style.color='#1890FF';\">https://github.com/XQGIN</a>")
         github_link.setAlignment(Qt.AlignCenter)
         github_link.setOpenExternalLinks(True)
         glass_layout.addWidget(github_link)
         
-        # 描述信息
-        desc_label = QLabel("一个简洁美观的Wallhaven壁纸下载工具")
+        #使用说明
+        desc_label = QLabel("使用说明：\n1. 类别：all（全部）、general（一般）、anime（动漫）、people（人物）、ga（一般+动漫）、gp（一般+人物）\n"
+        "\n2. 纯度：sfw（安全）、sketchy（轻度）、nsfw（成人）、ws（安全+轻度）、wn（安全+成人）、sn（轻度+成人）、all（全部）")
         desc_label.setAlignment(Qt.AlignCenter)
         desc_label.setWordWrap(True)
         glass_layout.addWidget(desc_label)
-        
+        #软件说明
+        desc_label = QLabel("本项目基于MIT许可证开源，您可以在遵守许可证条款的前提下自由使用、修改和分发本软件。")
+        desc_label.setAlignment(Qt.AlignCenter)
+        desc_label.setWordWrap(True)
+        glass_layout.addWidget(desc_label)
         # 确定按钮
         ok_btn = GlassButton("确定")
         ok_btn.clicked.connect(dialog.accept)
