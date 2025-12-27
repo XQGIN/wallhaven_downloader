@@ -25,7 +25,23 @@ def resource_path(relative_path):
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     
     return os.path.join(base_path, relative_path)
+
 from font_manager import FontManager
+# 导入日志系统
+from utils.logger import get_logger
+
+# 导入模块化的组件
+try:
+    from workers.download_thread import WallpaperDownloadThread
+    from ui.image_preview import ImagePreviewWidget
+except ImportError as e:
+    logger = get_logger(__name__)
+    logger.error(f"导入模块失败: {str(e)}，使用本地类定义")
+    # 如果导入失败，使用本地定义（向后兼容）
+    WallpaperDownloadThread = None
+    ImagePreviewWidget = None
+
+logger = get_logger(__name__)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSize, QPoint, QRect, QTimer
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen, QFont, QImage, QLinearGradient, QRadialGradient, QPainterPath
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -609,16 +625,29 @@ class GlassEffectWidget(QWidget):
         self.update()
 
 class ImagePreviewWidget(QWidget):
-    """图片预览部件"""
+    """图片预览部件 - 支持分页显示"""
+    
+    # 每页显示图片数量
+    ITEMS_PER_PAGE = 100
+    # 最大总图片数量限制
+    MAX_TOTAL_ITEMS = 500
+    
     def __init__(self, parent=None):
         super().__init__(parent)
+        
+        # 存储所有图片信息
+        self.all_images = []  # 列表元素: {"file_path": str, "pixmap": QPixmap}
+        self.current_page = 1
         
         # 创建主布局
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(5)
         
-        # 创建下载数量标签
+        # 创建顶部信息栏
+        info_layout = QHBoxLayout()
+        
+        # 下载数量标签
         self.download_count_label = QLabel("已下载: 0 张")
         self.download_count_label.setStyleSheet("""
             QLabel {
@@ -631,6 +660,23 @@ class ImagePreviewWidget(QWidget):
             }
         """)
         self.download_count_label.setAlignment(Qt.AlignCenter)
+        
+        # 分页信息标签
+        self.page_info_label = QLabel("第 1 页 / 共1页")
+        self.page_info_label.setStyleSheet("""
+            QLabel {
+                background-color: rgba(255, 255, 255, 100);
+                border: 1px solid rgba(200, 200, 200, 100);
+                border-radius: 5px;
+                padding: 5px;
+                margin: 5px;
+                font-weight: bold;
+            }
+        """)
+        self.page_info_label.setAlignment(Qt.AlignCenter)
+        
+        info_layout.addWidget(self.download_count_label)
+        info_layout.addWidget(self.page_info_label)
         
         # 创建图片列表控件
         self.image_list = QListWidget()
@@ -675,9 +721,52 @@ class ImagePreviewWidget(QWidget):
         # 连接双击事件
         self.image_list.itemDoubleClicked.connect(self.showFullImage)
         
-        # 添加下载数量标签和图片列表到主布局
-        self.main_layout.addWidget(self.download_count_label)
+        # 创建分页控制按钮
+        page_control_layout = QHBoxLayout()
+        
+        # 首页按钮
+        self.first_page_btn = QPushButton("首页")
+        self.first_page_btn.clicked.connect(self.goToFirstPage)
+        self.first_page_btn.setEnabled(False)
+        
+        # 上一页按钮
+        self.prev_page_btn = QPushButton("上一页")
+        self.prev_page_btn.clicked.connect(self.goToPrevPage)
+        self.prev_page_btn.setEnabled(False)
+        
+        # 页码跳转
+        page_jump_layout = QHBoxLayout()
+        page_jump_label = QLabel("跳转到:")
+        self.page_jump_spin = QSpinBox()
+        self.page_jump_spin.setMinimum(1)
+        self.page_jump_spin.setMaximum(1)
+        self.page_jump_spin.setValue(1)
+        page_jump_btn = QPushButton("跳转")
+        page_jump_btn.clicked.connect(self.jumpToPage)
+        page_jump_layout.addWidget(page_jump_label)
+        page_jump_layout.addWidget(self.page_jump_spin)
+        page_jump_layout.addWidget(page_jump_btn)
+        
+        # 下一页按钮
+        self.next_page_btn = QPushButton("下一页")
+        self.next_page_btn.clicked.connect(self.goToNextPage)
+        self.next_page_btn.setEnabled(False)
+        
+        # 末页按钮
+        self.last_page_btn = QPushButton("末页")
+        self.last_page_btn.clicked.connect(self.goToLastPage)
+        self.last_page_btn.setEnabled(False)
+        
+        page_control_layout.addWidget(self.first_page_btn)
+        page_control_layout.addWidget(self.prev_page_btn)
+        page_control_layout.addLayout(page_jump_layout)
+        page_control_layout.addWidget(self.next_page_btn)
+        page_control_layout.addWidget(self.last_page_btn)
+        
+        # 添加所有组件到主布局
+        self.main_layout.addLayout(info_layout)
         self.main_layout.addWidget(self.image_list)
+        self.main_layout.addLayout(page_control_layout)
         
     def showFullImage(self, item):
         """显示完整图片"""
@@ -732,6 +821,12 @@ class ImagePreviewWidget(QWidget):
     
     def addImage(self, file_path, pixmap):
         """添加图片到预览列表"""
+        # 内存优化：限制总图片数量
+        if len(self.all_images) >= self.MAX_TOTAL_ITEMS:
+            # 移除最早的图片，保持FIFO
+            self.all_images.pop(0)
+            logger.debug(f"图片总数达到上限({self.MAX_TOTAL_ITEMS})，移除最早的图片")
+        
         # 获取当前设置的预览图片大小
         preview_size = "中 (200x200)"  # 默认大小
         if hasattr(self.parent(), 'settings'):
@@ -774,38 +869,122 @@ class ImagePreviewWidget(QWidget):
         painter.drawPixmap(x, y, scaled_pixmap)
         painter.end()
         
-        # 创建列表项
-        item = QListWidgetItem()
+        # 存储图片信息
+        self.all_images.append({
+            "file_path": file_path,
+            "pixmap": fixed_pixmap
+        })
         
-        # 设置图标
-        icon = QIcon(fixed_pixmap)
-        item.setIcon(icon)
-        
-        # 不设置文本，只显示图片
-        # filename = os.path.basename(file_path)
-        # item.setText(filename)
-        
-        # 存储文件路径
-        item.setData(Qt.UserRole, file_path)
-        
-        # 添加到列表
-        self.image_list.addItem(item)
+        # 更新显示
+        self.updateDisplay()
         
         # 更新下载数量显示
-        count = self.image_list.count()
-        self.download_count_label.setText(f"已下载: {count} 张")
+        total_count = len(self.all_images)
+        self.download_count_label.setText(f"已下载: {total_count} 张")
+    
+    def updateDisplay(self):
+        """更新当前页面显示"""
+        # 清空当前显示
+        self.image_list.clear()
         
-        # 滚动到底部
-        self.image_list.scrollToBottom()
+        # 计算总页数
+        total_pages = max(1, (len(self.all_images) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        
+        # 确保当前页码合法
+        if self.current_page > total_pages:
+            self.current_page = total_pages
+        
+        # 更新分页信息
+        self.page_info_label.setText(f"第 {self.current_page} 页 / 共{total_pages}页")
+        self.page_jump_spin.setMaximum(total_pages)
+        self.page_jump_spin.setValue(self.current_page)
+        
+        # 更新按钮状态
+        self.first_page_btn.setEnabled(self.current_page > 1)
+        self.prev_page_btn.setEnabled(self.current_page > 1)
+        self.next_page_btn.setEnabled(self.current_page < total_pages)
+        self.last_page_btn.setEnabled(self.current_page < total_pages)
+        
+        # 计算当前页的图片索引范围
+        start_idx = (self.current_page - 1) * self.ITEMS_PER_PAGE
+        end_idx = min(start_idx + self.ITEMS_PER_PAGE, len(self.all_images))
+        
+        # 添加当前页的图片
+        for i in range(start_idx, end_idx):
+            image_data = self.all_images[i]
+            
+            # 创建列表项
+            item = QListWidgetItem()
+            
+            # 设置图标
+            icon = QIcon(image_data["pixmap"])
+            item.setIcon(icon)
+            
+            # 存储文件路径
+            item.setData(Qt.UserRole, image_data["file_path"])
+            
+            # 添加到列表
+            self.image_list.addItem(item)
+        
+        # 滚动到顶部
+        self.image_list.scrollToTop()
+    
+    def goToFirstPage(self):
+        """跳转到首页"""
+        self.current_page = 1
+        self.updateDisplay()
+        logger.debug("跳转到首页")
+    
+    def goToPrevPage(self):
+        """上一页"""
+        if self.current_page > 1:
+            self.current_page -= 1
+            self.updateDisplay()
+            logger.debug(f"跳转到第{self.current_page}页")
+    
+    def goToNextPage(self):
+        """下一页"""
+        total_pages = max(1, (len(self.all_images) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        if self.current_page < total_pages:
+            self.current_page += 1
+            self.updateDisplay()
+            logger.debug(f"跳转到第{self.current_page}页")
+    
+    def goToLastPage(self):
+        """跳转到末页"""
+        total_pages = max(1, (len(self.all_images) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        self.current_page = total_pages
+        self.updateDisplay()
+        logger.debug(f"跳转到末页(第{total_pages}页)")
+    
+    def jumpToPage(self):
+        """跳转到指定页"""
+        target_page = self.page_jump_spin.value()
+        total_pages = max(1, (len(self.all_images) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        
+        if 1 <= target_page <= total_pages:
+            self.current_page = target_page
+            self.updateDisplay()
+            logger.debug(f"跳转到第{target_page}页")
         
     def count(self):
         """返回图片数量"""
-        return self.image_list.count()
+        return len(self.all_images)
         
     def clear(self):
         """清除所有图片"""
+        self.all_images.clear()
+        self.current_page = 1
         self.image_list.clear()
         self.download_count_label.setText("已下载: 0 张")
+        self.page_info_label.setText("第 1 页 / 共1页")
+        self.page_jump_spin.setMaximum(1)
+        self.page_jump_spin.setValue(1)
+        self.first_page_btn.setEnabled(False)
+        self.prev_page_btn.setEnabled(False)
+        self.next_page_btn.setEnabled(False)
+        self.last_page_btn.setEnabled(False)
+        logger.debug("清除所有预览图片")
         
     def scrollToBottom(self):
         """滚动到底部"""
@@ -1581,9 +1760,16 @@ class MainWindow(QMainWindow):
         print("设置窗口标题和大小...")
         self.setWindowTitle("Wallhaven壁纸下载器")
         
-        # 设置窗口尺寸为2580×1440分辨率
-        self.setMinimumSize(2580, 1440)
-        self.resize(2580, 1440)
+        # 智能设置窗口尺寸 - 根据屏幕分辨率自适应
+        screen = QApplication.desktop().screenGeometry()
+        # 设置为屏幕的80%大小，更友好
+        window_width = int(screen.width() * 0.8)
+        window_height = int(screen.height() * 0.8)
+        # 设置最小尺寸为1280x720
+        self.setMinimumSize(1280, 720)
+        self.resize(window_width, window_height)
+        # 居中显示
+        self.center_on_screen()
         
         # 设置窗口图标
         print("设置窗口图标...")
@@ -1611,6 +1797,14 @@ class MainWindow(QMainWindow):
         self.initSystemTray()
         
         print("主窗口初始化完成")
+    
+    def center_on_screen(self):
+        """将窗口居中显示"""
+        screen = QApplication.desktop().screenGeometry()
+        window_geometry = self.frameGeometry()
+        center_point = screen.center()
+        window_geometry.moveCenter(center_point)
+        self.move(window_geometry.topLeft())
     
     def loadSettings(self):
         """加载设置"""
@@ -2072,71 +2266,220 @@ class MainWindow(QMainWindow):
         self.loadDownloadSettings()
     
     def showAbout(self):
-        """显示关于对话框"""
-        
+        """显示关于对话框 - 现代化美化版本"""
         dialog = QDialog(self)
         dialog.setWindowTitle("关于")
-        dialog.setMinimumSize(1200, 1000)
+        dialog.setMinimumSize(900, 700)
+        dialog.resize(1000, 850)
         
-        layout = QVBoxLayout(dialog)
+        main_layout = QVBoxLayout(dialog)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # 创建玻璃效果容器
+        # 创建主容器
         glass_container = GlassEffectWidget(dialog)
-        glass_layout = QVBoxLayout(glass_container)
-        glass_layout.setContentsMargins(20, 20, 20, 20)
-        glass_layout.setSpacing(10)
+        container_layout = QVBoxLayout(glass_container)
+        container_layout.setContentsMargins(40, 40, 40, 40)
+        container_layout.setSpacing(25)
         
-        # 加载自定义字体
-        from PyQt5.QtGui import QFontDatabase
-        font_id = QFontDatabase.addApplicationFont(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'font', 'NanoByongGyeHei-Regular.ttf'))
-        font_family = "NanoByongGyeHei-Regular"
-        if font_id != -1:
-            font_families = QFontDatabase.applicationFontFamilies(font_id)
-            if font_families:
-                font_family = font_families[0]
+        # ============ 顶部区域 ============
+        top_section = QWidget()
+        top_layout = QVBoxLayout(top_section)
+        top_layout.setSpacing(15)
         
-        # 应用标题
-        title_label = QLabel("Wallhaven壁纸下载器")
+        # 应用标题（大号优雅字体）
+        title_label = QLabel("Wallhaven 壁纸下载器")
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setFont(QFont(font_family, 16, QFont.Bold))
-        glass_layout.addWidget(title_label)
+        title_label.setFont(QFont("Microsoft YaHei UI", 24, QFont.Bold))
+        title_label.setStyleSheet("""
+            QLabel {
+                color: #1a1a1a;
+                letter-spacing: 2px;
+                padding: 10px;
+            }
+        """)
+        title_label.setWordWrap(True)
+        title_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        top_layout.addWidget(title_label)
         
-        # 版本信息
-        version_label = QLabel("版本 1.1.0")
+        # 版本信息（优雅副标题）
+        version_label = QLabel("v2.0.0")
         version_label.setAlignment(Qt.AlignCenter)
-        glass_layout.addWidget(version_label)
-              
-        # GitHub链接
-        github_link = QLabel("作者: XQGIN<br><a style='color: #1890FF; text-decoration: none; font-weight: 500; transition: color 0.3s ease;' href='https://github.com/XQGIN' onmouseover=\"this.style.color='#096dd9';\" onmouseout=\"this.style.color='#1890FF';\">https://github.com/XQGIN</a>")
-        github_link.setAlignment(Qt.AlignCenter)
+        version_label.setFont(QFont("Microsoft YaHei UI", 11))
+        version_label.setStyleSheet("""
+            QLabel {
+                color: #666666;
+                padding: 5px;
+                background: rgba(96, 165, 250, 0.1);
+                border-radius: 12px;
+                max-width: 120px;
+            }
+        """)
+        version_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        top_layout.addWidget(version_label, 0, Qt.AlignHCenter)
+        
+        container_layout.addWidget(top_section)
+        
+        # 添加分隔线
+        separator1 = QFrame()
+        separator1.setFrameShape(QFrame.HLine)
+        separator1.setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 transparent, stop:0.5 rgba(96, 165, 250, 0.3), stop:1 transparent); min-height: 2px; max-height: 2px;")
+        container_layout.addWidget(separator1)
+        
+        # ============ 作者信息卡片 ============
+        author_card = QWidget()
+        author_card.setStyleSheet("""
+            QWidget {
+                background: rgba(96, 165, 250, 0.08);
+                border-radius: 15px;
+                padding: 15px;
+            }
+        """)
+        author_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        author_layout = QVBoxLayout(author_card)
+        author_layout.setSpacing(8)
+        author_layout.setContentsMargins(15, 15, 15, 15)
+        
+        author_label = QLabel("👨‍💻 作者")
+        author_label.setFont(QFont("Microsoft YaHei UI", 10, QFont.Bold))
+        author_label.setStyleSheet("color: #60a5fa; background: transparent;")
+        author_layout.addWidget(author_label)
+        
+        author_name = QLabel("XQGIN")
+        author_name.setFont(QFont("Microsoft YaHei UI", 12))
+        author_name.setStyleSheet("color: #1a1a1a; padding-left: 5px; background: transparent;")
+        author_name.setWordWrap(True)
+        author_layout.addWidget(author_name)
+        
+        github_link = QLabel('<a href="https://github.com/XQGIN" style="color: #60a5fa; text-decoration: none; font-weight: 500;">🔗 https://github.com/XQGIN</a>')
         github_link.setOpenExternalLinks(True)
-        glass_layout.addWidget(github_link)
+        github_link.setStyleSheet("padding-left: 5px; background: transparent;")
+        github_link.setWordWrap(True)
+        github_link.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        author_layout.addWidget(github_link)
         
-        #使用说明
-        desc_label = QLabel("使用说明：\n1. 类别：all（全部）、general（一般）、anime（动漫）、people（人物）、ga（一般+动漫）、gp（一般+人物）\n"
-        "\n2. 纯度：sfw（安全）、sketchy（轻度）、nsfw（成人）、ws（安全+轻度）、wn（安全+成人）、sn（轻度+成人）、all（全部）")
-        desc_label.setAlignment(Qt.AlignCenter)
-        desc_label.setWordWrap(True)
-        glass_layout.addWidget(desc_label)
-        #软件说明
-        desc_label = QLabel("本项目基于MIT许可证开源，您可以在遵守许可证条款的前提下自由使用、修改和分发本软件。")
-        desc_label.setAlignment(Qt.AlignCenter)
-        desc_label.setWordWrap(True)
-        glass_layout.addWidget(desc_label)
-        # 确定按钮
-        ok_btn = GlassButton("确定")
-        ok_btn.clicked.connect(dialog.accept)
-        glass_layout.addWidget(ok_btn)
+        container_layout.addWidget(author_card)
         
-        layout.addWidget(glass_container)
-        dialog.setLayout(layout)
+        # ============ 功能说明卡片 ============
+        features_card = QWidget()
+        features_card.setStyleSheet("""
+            QWidget {
+                background: rgba(168, 85, 247, 0.08);
+                border-radius: 15px;
+                padding: 15px;
+            }
+        """)
+        features_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        features_layout = QVBoxLayout(features_card)
+        features_layout.setSpacing(10)
+        features_layout.setContentsMargins(15, 15, 15, 15)
         
-        # 应用当前主题
+        features_title = QLabel("📋 类别说明")
+        features_title.setFont(QFont("Microsoft YaHei UI", 10, QFont.Bold))
+        features_title.setStyleSheet("color: #a855f7; background: transparent;")
+        features_layout.addWidget(features_title)
+        
+        category_text = QLabel(
+            "<span style='color: #1a1a1a; line-height: 1.8;'>"
+            "<b>all</b> 全部 &nbsp;|&nbsp; <b>general</b> 一般 &nbsp;|&nbsp; <b>anime</b> 动漫<br>"
+            "<b>people</b> 人物 &nbsp;|&nbsp; <b>ga</b> 一般+动漫 &nbsp;|&nbsp; <b>gp</b> 一般+人物"
+            "</span>"
+        )
+        category_text.setWordWrap(True)
+        category_text.setStyleSheet("padding-left: 5px; background: transparent;")
+        category_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        features_layout.addWidget(category_text)
+        
+        purity_title = QLabel("🎨 纯度说明")
+        purity_title.setFont(QFont("Microsoft YaHei UI", 10, QFont.Bold))
+        purity_title.setStyleSheet("color: #a855f7; background: transparent; margin-top: 8px;")
+        features_layout.addWidget(purity_title)
+        
+        purity_text = QLabel(
+            "<span style='color: #1a1a1a; line-height: 1.8;'>"
+            "<b>sfw</b> 安全 &nbsp;|&nbsp; <b>sketchy</b> 轻度 &nbsp;|&nbsp; <b>nsfw</b> 成人<br>"
+            "<b>ws</b> 安全+轻度 &nbsp;|&nbsp; <b>wn</b> 安全+成人 &nbsp;|&nbsp; <b>sn</b> 轻度+成人"
+            "</span>"
+        )
+        purity_text.setWordWrap(True)
+        purity_text.setStyleSheet("padding-left: 5px; background: transparent;")
+        purity_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        features_layout.addWidget(purity_text)
+        
+        container_layout.addWidget(features_card)
+        
+        # ============ 许可证信息卡片 ============
+        license_card = QWidget()
+        license_card.setStyleSheet("""
+            QWidget {
+                background: rgba(34, 197, 94, 0.08);
+                border-radius: 15px;
+                padding: 15px;
+            }
+        """)
+        license_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        license_layout = QVBoxLayout(license_card)
+        license_layout.setSpacing(8)
+        license_layout.setContentsMargins(15, 15, 15, 15)
+        
+        license_title = QLabel("⚖️ 开源许可")
+        license_title.setFont(QFont("Microsoft YaHei UI", 10, QFont.Bold))
+        license_title.setStyleSheet("color: #22c55e; background: transparent;")
+        license_layout.addWidget(license_title)
+        
+        license_text = QLabel(
+            "<span style='color: #1a1a1a; line-height: 1.8;'>"
+            "本项目基于 <b>MIT</b> 许可证开源<br>"
+            "您可以自由使用、修改和分发本软件"
+            "</span>"
+        )
+        license_text.setWordWrap(True)
+        license_text.setStyleSheet("padding-left: 5px; background: transparent;")
+        license_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        license_layout.addWidget(license_text)
+        
+        container_layout.addWidget(license_card)
+        
+        # 添加弹性空间
+        container_layout.addStretch()
+        
+        # ============ 底部按钮 ============
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(15)
+        
+        # GitHub按钮
+        github_btn = GlassButton("📦 访问 GitHub")
+        github_btn.setMinimumHeight(45)
+        github_btn.setFont(QFont("Microsoft YaHei UI", 10))
+        github_btn.clicked.connect(lambda: self._openUrl("https://github.com/XQGIN/wallhaven_downloader"))
+        button_layout.addWidget(github_btn)
+        
+        # 关闭按钮
+        close_btn = GlassButton("✓ 确定")
+        close_btn.setMinimumHeight(45)
+        close_btn.setFont(QFont("Microsoft YaHei UI", 10, QFont.Bold))
+        close_btn.clicked.connect(dialog.accept)
+        button_layout.addWidget(close_btn)
+        
+        container_layout.addLayout(button_layout)
+        
+        # 添加到主布局
+        main_layout.addWidget(glass_container)
+        dialog.setLayout(main_layout)
+        
+        # 应用当前主题透明度
         transparency = self.settings.get("glass_transparency", 200)
         glass_container.setTransparency(transparency)
-        ok_btn.setTransparency(transparency)
+        github_btn.setTransparency(transparency)
+        close_btn.setTransparency(transparency)
         
+        # 显示对话框
         dialog.exec_()
+    
+    def _openUrl(self, url):
+        """打开URL链接"""
+        from PyQt5.QtGui import QDesktopServices
+        from PyQt5.QtCore import QUrl
+        QDesktopServices.openUrl(QUrl(url))
         
     
     def updateDownloadOptions(self):

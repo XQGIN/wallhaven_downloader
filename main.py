@@ -9,6 +9,10 @@ import atexit
 # 添加src目录到Python路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
+# 初始化日志系统
+from utils.logger import setup_logger
+setup_logger(log_level="INFO")
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QIcon
