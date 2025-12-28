@@ -200,31 +200,123 @@ A: 默认保存在"图片\Wallhaven"文件夹下，可以在下载设置中更�
 
 ### 打包和发布
 
-#### 1. 安装打包依赖
+本项目支持两种打包方式：**Briefcase**（推荐跨平台）和 **PyInstaller**（推荐 Windows）。
+
+#### 方式一：使用 Briefcase 打包（跨平台推荐）
+
+Briefcase 提供跨平台统一的打包体验，支持生成现代化的安装包。
+
+##### 快速打包
 ```bash
-pip install pyinstaller
+python build_briefcase.py
 ```
 
-#### 2. 打包程序
+脚本会自动完成所有步骤，包括安装依赖、构建应用、打包安装程序。
+
+##### 手动打包步骤
+
+首次使用需要安装 Briefcase：
+```bash
+pip install briefcase>=0.3.18
+```
+
+然后执行打包：
+```bash
+briefcase create   # 创建应用结构
+briefcase build    # 构建应用
+briefcase package  # 打包安装程序
+```
+
+**开发测试**：
+```bash
+briefcase dev      # 开发模式运行（无需打包）
+briefcase run      # 运行已打包的应用
+```
+
+**输出文件**：
+- Windows: `dist/Wallhaven壁纸下载器-1.1.0.msi`
+- macOS: `dist/Wallhaven壁纸下载器-1.1.0.dmg`
+- Linux: `dist/wallhaven_downloader-1.1.0.AppImage`
+
+详细说明请查看 [BRIEFCASE_BUILD.md](BRIEFCASE_BUILD.md)
+
+#### 方式二：使用 PyInstaller 打包（Windows 推荐）
+
+PyInstaller 提供更灵活的打包配置，适合 Windows 平台发布。
+
+##### 第一步：使用 PyInstaller 打包
+
+运行打包脚本：
 ```bash
 python build.py
 ```
 
-这将会：
-- 清理之前的构建文件
-- 使用PyInstaller打包应用
-- 复制相关文档到dist目录
-- 生成版本信息文件
+**脚本功能**：
+- ✅ 自动验证所有必需资源文件（图标、多语言文件、配置示例）
+- ✅ 清理旧的构建产物
+- ✅ 打包所有资源文件和依赖库
+- ✅ 包含所有子模块（core、ui、utils、workers）
+- ✅ 生成单目录可执行程序
+- ✅ 详细的进度提示和错误处理
 
-输出目录: `dist/WallhavenDownloader/`
+**输出位置**：
+```
+dist/WallhavenDownloader/
+├── WallhavenDownloader.exe  (主程序)
+├── _internal/                (依赖文件)
+├── icon/                     (图标资源)
+├── locales/                  (语言文件)
+└── .env.example             (配置示例)
+```
 
-#### 3. 创建安装包（可选）
+##### 第二步：测试可执行程序
 
-1. 下载并安装 [Inno Setup](https://jrsoftware.org/isdl.php)
-2. 使用Inno Setup编译器打开 `setup.iss`
-3. 点击"Build" -> "Compile"
+打包完成后，测试程序是否正常运行：
+```bash
+dist\WallhavenDownloader\WallhavenDownloader.exe
+```
 
-安装包将生成在: `dist/installer/WallhavenDownloader_v2.0.0_Setup.exe`
+**检查项目**：
+- [x] 程序能正常启动
+- [x] 界面显示正常（图标、主题）
+- [x] 多语言切换功能正常
+- [x] 能正常创建 `.env` 和 `settings.json`
+- [x] 下载功能正常
+
+##### 第三步：创建 Windows 安装程序（可选）
+
+使用 Inno Setup 创建专业的安装包：
+
+1. 下载并安装 [Inno Setup](https://jrsoftware.org/isdl.php) (6.0+)
+2. 使用 Inno Setup 编译器打开 `setup.iss`
+3. 点击 "Build" → "Compile" (或按 Ctrl+F9)
+
+**生成的安装程序**：
+```
+dist/installer/WallhavenDownloader_v2.0.0_Setup.exe
+```
+
+**安装程序功能**：
+- 支持中文和英文安装界面
+- 自动检测并提示升级旧版本
+- 创建开始菜单和桌面快捷方式
+- 首次运行自动创建 `.env` 配置文件
+- 卸载时可选保留用户数据（设置、下载）
+- 智能清理临时文件和缓存
+
+##### 常见问题
+
+**Q: 打包时提示缺少模块？**
+A: 检查 `build.py` 中的 `hidden_imports` 列表，确保包含所有需要的模块。
+
+**Q: 程序运行时找不到资源文件？**
+A: 确保 `locales/` 和 `icon/` 目录存在且包含必要文件。
+
+**Q: 多语言文件加载失败？**
+A: 检查 `locales/zh_CN.json` 和 `locales/en_US.json` 格式是否正确。
+
+**Q: 安装程序提示编码错误？**
+A: Inno Setup 已配置 `codepage=65001` (UTF-8)，如仍有问题，检查 `.iss` 文件编码。
 
 ### 运行测试
 ```bash
@@ -242,36 +334,46 @@ mypy src/
 
 ```
 wallhaven_downloader/
-├── src/                    # 源代码目录
+├── wallhaven_downloader/   # 源代码目录
 │   ├── core/              # 核心业务逻辑
+│   │   ├── __init__.py
 │   │   ├── settings_manager.py   # 配置管理
-│   │   └── theme_manager.py      # 主题管理
+│   │   ├── theme_manager.py      # 主题管理
+│   │   └── i18n_manager.py       # 国际化管理
 │   ├── ui/                # UI组件
+│   │   ├── __init__.py
 │   │   ├── image_preview.py      # 图片预览
 │   │   ├── animation_mixin.py    # 动画混入
 │   │   └── theme_transition.py   # 主题切换动画
 │   ├── workers/           # 后台线程
-│   │   └── download_thread.py
+│   │   ├── __init__.py
+│   │   └── download_thread.py    # 下载线程
 │   ├── utils/             # 工具模块
-│   │   ├── logger.py
-│   │   ├── exceptions.py
-│   │   ├── performance.py
-│   │   └── resource_helper.py
-│   ├── font_manager.py
-│   └── main_window.py
-├── tests/                 # 单元测试
-│   ├── test_settings_manager.py
-│   ├── test_download_thread.py
-│   └── test_theme_manager.py
+│   │   ├── __init__.py
+│   │   ├── logger.py             # 日志系统
+│   │   ├── exceptions.py         # 异常定义
+│   │   ├── performance.py        # 性能监控
+│   │   └── resource_helper.py    # 资源助手
+│   ├── __init__.py
+│   ├── __main__.py         # Briefcase应用入口
+│   ├── font_manager.py     # 字体管理
+│   └── main_window.py      # 主窗口
+├── locales/               # 国际化语言文件
+│   ├── zh_CN.json         # 简体中文
+│   └── en_US.json         # 英文
 ├── icon/                  # 图标资源
-├── font/                  # 字体资源
-├── build.py               # 打包脚本
+│   ├── logo.ico
+│   └── logo.png
+├── build.py               # PyInstaller打包脚本
+├── build_briefcase.py     # Briefcase打包脚本
+├── pyproject.toml         # Briefcase配置文件
 ├── setup.iss              # Inno Setup安装脚本
-├── main.py                # 程序入口
+├── main.py                # PyInstaller程序入口
 ├── requirements.txt       # Python依赖
 ├── .env.example           # 环境变量示例
 ├── .gitignore             # Git忽略文件
-├── CHANGELOG.md           # 更新日志
+├── BRIEFCASE_BUILD.md     # Briefcase打包说明
+├── INTERNATIONALIZATION.md # 国际化说明
 ├── README.md              # 说明文档（中文）
 ├── README_EN.md           # 说明文档（英文）
 └── LICENSE                # 许可证

@@ -1,0 +1,501 @@
+Date/Time:       2025-12-28 17:13:37 
+Command line:    D:\Python\Lib\site-packages\briefcase\__main__.py package
+
+OS Release:      Windows 11
+OS Version:      10.0.22631
+Architecture:    AMD64
+Platform:        Windows-11-10.0.22631-SP0
+
+Python exe:      D:\Python\python.exe
+Python version:  3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]
+Virtual env:     False
+Conda env:       False
+
+Briefcase:       0.3.26
+Target platform: windows
+Target format:   app
+
+Environment Variables:
+	ALLUSERSPROFILE=C:\ProgramData
+	APPDATA=C:\Users\PITY\AppData\Roaming
+	BUNDLED_DEBUGPY_PATH=d:\SOFTapp\Qoder\resources\app\extensions\ms-python.debugpy\bundled\libs\debugpy
+	CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_8616_BBAWJTNICQNWSQDS
+	CLASSPATH=.;D:\SOFTapp\JAVA\lib\dt.jar;D:\SOFTapp\JAVA\lib\tools.jar
+	COLORTERM=truecolor
+	COMMONPROGRAMFILES=C:\Program Files\Common Files
+	COMMONPROGRAMFILES(X86)=C:\Program Files (x86)\Common Files
+	COMMONPROGRAMW6432=C:\Program Files\Common Files
+	COMPUTERNAME=MOLDIEX
+	COMSPEC=C:\windows\system32\cmd.exe
+	DESKTOP=C:\Users\PITY\Desktop
+	DISABLE_AUTO_UPDATE=true
+	DRIVERDATA=C:\Windows\System32\Drivers\DriverData
+	EFC_5260=1
+	FEATURE_FLAGS={"on_premise":false,"watermark.show.title":false,"watermark.sub.title":"watermark.sub.title","login.multi.account":false,"auth.use.plan_tier_name":true,"welcome.firstLaunchKey":"qoder.firstLaunch","welcome.useCustomStyle":false,"questMode.enable":true,"repoWiki.enable":true,"codebase.ignoreFileName":".qoderignore","chat.defaultMode":"agent","chat.defaultAskModeUseTools":true,"currentPlanTitleKey":"application.config.general.plan.currentPlan.title","enableModeAgent":true,"enableChatImage":true,"enableCreditUsage":true,"commit":"b26f78c1b8cef211b4a811fc937798e26d850a51","date":"2025-12-26T04:26:55.607Z","checksums":{"vs/base/parts/sandbox/electron-sandbox/preload.js":"QNT0U7gp8nMsdlC5+dksNKX4Mk83/nNlgdsfuZvKz0k","vs/workbench/workbench.desktop.main.js":"GLmip1EqQmsk1qEzhtyL4HMHSHA7UbxugU8pkjX8Yyk","vs/workbench/workbench.desktop.main.css":"ML71HWgkKvjgxumMSfZiCvf4awyHeOFN8JwzK5i3su8","vs/workbench/api/node/extensionHostProcess.js":"eXbUy7Lafq9uH6ccpiRbvk6EPIPwlV9QjXdKXI9yinQ","vs/code/electron-sandbox/workbench/workbench.html":"YfGiDadsJ+c6qGP/0E/Ako6nkaOIjJr1WXlDwCRb9Ak","vs/code/electron-sandbox/workbench/workbench.js":"fY9rd3E+QaUIN25IBQRJh2p2w5ggJyb6gnPHDJRqM00"},"version":"0.2.25"}
+	FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+	FPS_BROWSER_USER_PROFILE_STRING=Default
+	GIT_ASKPASS=********************
+	GIT_PAGER=cat
+	HOMEDRIVE=C:
+	HOMEPATH=\Users\PITY
+	JAVA_HOME=D:\SOFTapp\JAVA
+	LANG=zh_CN.UTF-8
+	LOCALAPPDATA=C:\Users\PITY\AppData\Local
+	LOGONSERVER=\\MOLDIEX
+	NODE_PATH=D:\SOFTapp\nodejs\node_global\node_modules
+	NPM_CONFIG_YES=true
+	NUMBER_OF_PROCESSORS=16
+	ONEDRIVE=C:\Users\PITY\OneDrive
+	ORIGINAL_XDG_CURRENT_DESKTOP=undefined
+	OS=Windows_NT
+	PATH=C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\java8path;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;D:\Python\Scripts\;D:\Python\;C:\windows\system32;C:\windows;C:\windows\System32\Wbem;C:\windows\System32\WindowsPowerShell\v1.0\;C:\windows\System32\OpenSSH\;D:\SOFTapp\Bandizip;C:\Program Files\dotnet\;C:\Program Files (x86)\dotnet\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;D:\SOFTapp\nodejs\;D:\SOFTapp\nodejs\node_global\node_modules;D:\SOFTapp\Git\cmd;D:\SOFTapp\JAVA\bin;D:\SOFTapp\JAVA\jre\bin;d:\SOFTapp\Trae CN\bin;C:\Users\PITY\AppData\Local\Microsoft\WindowsApps;D:\SOFTapp\Windsurf\bin;D:\SOFTapp\nodejs\node_global;D:\SOFTapp\Qoder\bin;d:\SOFTapp\Qoder\resources\app\extensions\ms-python.debugpy\bundled\scripts\noConfigScripts
+	PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL
+	PIP_NO_INPUT=true
+	PROCESSOR_ARCHITECTURE=AMD64
+	PROCESSOR_IDENTIFIER=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD
+	PROCESSOR_LEVEL=25
+	PROCESSOR_REVISION=5000
+	PROGRAMDATA=C:\ProgramData
+	PROGRAMFILES=C:\Program Files
+	PROGRAMFILES(X86)=C:\Program Files (x86)
+	PROGRAMW6432=C:\Program Files
+	PSMODULEPATH=D:\文档\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\windows\system32\WindowsPowerShell\v1.0\Modules
+	PUBLIC=C:\Users\Public
+	PYDEVD_DISABLE_FILE_VALIDATION=1
+	PYTHONSTARTUP=c:\Users\PITY\AppData\Roaming\Qoder\User\workspaceStorage\71d682cd5adbe5c0edcdee5c985a3f9e\ms-python.python\pythonrc.py
+	PYTHON_BASIC_REPL=1
+	QODER_IDE=1
+	SESSIONNAME=Console
+	SYSTEMDRIVE=C:
+	SYSTEMROOT=C:\windows
+	TEMP=C:\Users\PITY\AppData\Local\Temp
+	TERM_PROGRAM=vscode
+	TERM_PROGRAM_VERSION=1.100.0
+	TMP=C:\Users\PITY\AppData\Local\Temp
+	USERDOMAIN=MOLDIEX
+	USERDOMAIN_ROAMINGPROFILE=MOLDIEX
+	USERNAME=PITY
+	USERPROFILE=C:\Users\PITY
+	VSCODE_DEBUGPY_ADAPTER_ENDPOINTS=d:\SOFTapp\Qoder\resources\app\extensions\ms-python.debugpy\.noConfigDebugAdapterEndpoints\endpoint-33d677e289cb9341.txt
+	VSCODE_GIT_ASKPASS_EXTRA_ARGS=********************
+	VSCODE_GIT_ASKPASS_MAIN=********************
+	VSCODE_GIT_ASKPASS_NODE=********************
+	VSCODE_GIT_IPC_HANDLE=\\.\pipe\vscode-git-bdbd12168f-sock
+	VSCODE_INJECTION=1
+	WINDIR=C:\windows
+
+pyproject.toml:
+[tool.briefcase]
+project_name = "Wallhaven Downloader"
+bundle = "com.wallhaven"
+version = "1.1.0"
+url = "https://github.com/XQGIN/wallhaven_downloader"
+license.file = "LICENSE"
+author = "XQGIN"
+author_email = ""
+
+[tool.briefcase.app.wallhaven_downloader]
+formal_name = "Wallhaven壁纸下载器"
+description = "一个基于PyQt5的Wallhaven壁纸批量下载工具"
+long_description = """一个基于PyQt5的Wallhaven壁纸批量下载工具，支持多种下载方式和自定义设置。
+
+功能特性：
+- 多种下载方式：支持下载最新壁纸、从指定类别下载、通过关键词搜索下载
+- 高性能下载：支持多线程并发下载，提高下载效率
+- 美观界面：采用液态玻璃效果设计，支持浅色/深色/自动主题切换
+- 图片预览：实时预览已下载的图片，支持分页显示
+- 智能管理：自动检测重复文件、支持断点续传、内存优化
+"""
+sources = ['wallhaven_downloader']
+icon = "icon/logo"
+splash = "icon/logo"
+
+# 添加额外资源文件
+resources = [
+    'locales',
+    'icon',
+]
+
+test_sources = ['tests']
+
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# Windows配置
+[tool.briefcase.app.wallhaven_downloader.windows]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# macOS配置
+[tool.briefcase.app.wallhaven_downloader.macOS]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# Linux配置
+[tool.briefcase.app.wallhaven_downloader.linux]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+system_requires = [
+    'libgl1-mesa-glx',
+    'libxkbcommon-x11-0',
+    'libxcb-icccm4',
+    'libxcb-image0',
+    'libxcb-keysyms1',
+    'libxcb-randr0',
+    'libxcb-render-util0',
+    'libxcb-xinerama0',
+    'libxcb-xfixes0',
+]
+
+[build-system]
+requires = ["briefcase"]
+
+Briefcase Log:
+[17:12:48]                                                                                                                                                                 wix.py:75
+           [wix] The WiX toolset was not found; downloading and installing...                                                                                              wix.py:75
+[17:12:49] Downloading wix-cli-x64.msi...                                                                                                                                file.py:227
+[17:12:50] Installing WiX... started                                                                                                                                      wix.py:128
+                                                                                                                                                                   subprocess.py:839
+           >>> Running Command:                                                                                                                                    subprocess.py:839
+           >>>     msiexec /a 'C:\Users\PITY\AppData\Local\BeeWare\briefcase\Cache\tools\wix-cli-x64.msi' /qn                                                      subprocess.py:839
+           'TARGETDIR=C:\Users\PITY\AppData\Local\BeeWare\briefcase\Cache\tools\wix'                                                                                                
+           >>> Working Directory:                                                                                                                                  subprocess.py:839
+           >>>     D:\programs\wallhaven_downloader-main                                                                                                           subprocess.py:839
+[17:12:51] >>> Return code: 0                                                                                                                                      subprocess.py:839
+                                                                                                                                                                   subprocess.py:839
+           Installing WiX... done                                                                                                                                         wix.py:128
+           Using WiX at C:\Users\PITY\AppData\Local\BeeWare\briefcase\Cache\tools\wix                                                                                     wix.py:108
+                                                                                                                                                                     __init__.py:539
+           *************************************************************************                                                                                 __init__.py:539
+           ** WARNING: No signing identity provided                               **                                                                                 __init__.py:539
+           *************************************************************************                                                                                 __init__.py:539
+                                                                                                                                                                     __init__.py:539
+               Briefcase will not sign the app. To provide a signing identity,                                                                                       __init__.py:539
+               use the `--identity` option; or, to explicitly disable signing,                                                                                       __init__.py:539
+               use `--adhoc-sign`.                                                                                                                                   __init__.py:539
+                                                                                                                                                                     __init__.py:539
+           *************************************************************************                                                                                 __init__.py:539
+           Building MSI... started                                                                                                                                   __init__.py:581
+                                                                                                                                                                   subprocess.py:839
+           >>> Running Command:                                                                                                                                    subprocess.py:839
+           >>>     'C:\Users\PITY\AppData\Local\BeeWare\briefcase\Cache\tools\wix\PFiles64\WiX Toolset v5.0\bin\wix.exe' build -ext                                subprocess.py:839
+           'C:\Users\PITY\AppData\Local\BeeWare\briefcase\Cache\tools\wix\CFiles64\WixToolset\extensions\WixToolset.UI.wixext\5.0.2\wixext5\WixToolset.UI.wixext.d                  
+           ll' -arch x64 wallhaven_downloader.wxs -loc unicode.wxl -pdbtype none -o 'D:\programs\wallhaven_downloader-main\dist\Wallhaven壁纸下载器-1.1.0.msi'                      
+           >>> Working Directory:                                                                                                                                  subprocess.py:839
+           >>>     D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app                                                                    subprocess.py:839
+[17:13:36] D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(3) : error WIX0311: A string was provided with    subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(3) : error WIX0311: A string was provided with    subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(3) : error WIX0311: A string was provided with    subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(35) : error WIX0311: A string was provided with   subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(50) : error WIX0311: A string was provided with   subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(52) : error WIX0311: A string was provided with   subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(58) : error WIX0311: A string was provided with   subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           D:\programs\wallhaven_downloader-main\build\wallhaven_downloader\windows\app\wallhaven_downloader.wxs(72) : error WIX0311: A string was provided with   subprocess.py:196
+           characters that are not available in the specified database code page '1252'. Either change these characters to ones that exist in the database's code                   
+           page, or update the database's code page by modifying one of the following attributes: Package/@Codepage, Module/@Codepage, Patch/@Codepage, or                          
+           WixLocalization/@Codepage.                                                                                                                                               
+           >>> Return code: 311                                                                                                                                    subprocess.py:839
+                                                                                                                                                                   subprocess.py:839
+           Building MSI... errored                                                                                                                                   __init__.py:581
+                                                                                                                                                                      __main__.py:42
+           Unable to package app wallhaven_downloader.                                                                                                                __main__.py:43
+           Saving log... started                                                                                                                                      console.py:443
+
+Main thread traceback:
+╭─────────────────────────────────────────────────────────────────────── Traceback (most recent call last) ────────────────────────────────────────────────────────────────────────╮
+│ D:\Python\Lib\site-packages\briefcase\platforms\windows\__init__.py:582 in _package_msi                                                                                          │
+│                                                                                                                                                                                  │
+│   579 │   │   """Build the msi installer."""                                                                                                                                     │
+│   580 │   │   try:                                                                                                                                                               │
+│   581 │   │   │   with self.console.wait_bar("Building MSI..."):                                                                                                                 │
+│ ❱ 582 │   │   │   │   self.tools.subprocess.run(                                                                                                                                 │
+│   583 │   │   │   │   │   [                                                                                                                                                      │
+│   584 │   │   │   │   │   │   self.tools.wix.wix_exe,                                                                                                                            │
+│   585 │   │   │   │   │   │   "build",                                                                                                                                           │
+│                                                                                                                                                                                  │
+│ ╭──────────────────────────────────────────── locals ────────────────────────────────────────────╮                                                                               │
+│ │  app = <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>                                   │                                                                               │
+│ │ self = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30> │                                                                               │
+│ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯                                                                               │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\integrations\subprocess.py:145 in inner                                                                                                    │
+│                                                                                                                                                                                  │
+│   142 │   │   │   with sub.tools.console.release_console_control():                                                                                                              │
+│   143 │   │   │   │   return sub_method(sub, args, *wrapped_args, **wrapped_kwargs)                                                                                              │
+│   144 │   │   else:                                                                                                                                                              │
+│ ❱ 145 │   │   │   return sub_method(sub, args, *wrapped_args, **wrapped_kwargs)                                                                                                  │
+│   146 │                                                                                                                                                                          │
+│   147 │   return inner                                                                                                                                                           │
+│   148                                                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ╭─────────────────────────────────────────────────────────────────────────────────── locals ───────────────────────────────────────────────────────────────────────────────────╮ │
+│ │                    args = [                                                                                                                                                  │ │
+│ │                           │   WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/PFiles64/WiX Toolset v5.0/bin/wix.exe'),                            │ │
+│ │                           │   'build',                                                                                                                                       │ │
+│ │                           │   '-ext',                                                                                                                                        │ │
+│ │                           │                                                                                                                                                  │ │
+│ │                           WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/CFiles64/WixToolset/extensions/WixToolset.UI.wixext/5.0.2/wixext5/WixT… │ │
+│ │                           │   '-arch',                                                                                                                                       │ │
+│ │                           │   'x64',                                                                                                                                         │ │
+│ │                           │   'wallhaven_downloader.wxs',                                                                                                                    │ │
+│ │                           │   '-loc',                                                                                                                                        │ │
+│ │                           │   'unicode.wxl',                                                                                                                                 │ │
+│ │                           │   '-pdbtype',                                                                                                                                    │ │
+│ │                           │   ... +3                                                                                                                                         │ │
+│ │                           ]                                                                                                                                                  │ │
+│ │              executable = 'C:\\Users\\PITY\\AppData\\Local\\BeeWare\\briefcase\\Cache\\tools\\wix\\PFiles64\\WiX Tools'+19                                                   │ │
+│ │ remove_dynamic_elements = False                                                                                                                                              │ │
+│ │                     sub = <briefcase.integrations.subprocess.Subprocess object at 0x000000000520E660>                                                                        │ │
+│ │            wrapped_args = ()                                                                                                                                                 │ │
+│ │          wrapped_kwargs = {'check': True, 'cwd': WindowsPath('D:/programs/wallhaven_downloader-main/build/wallhaven_downloader/windows/app')}                                │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\integrations\subprocess.py:539 in run                                                                                                      │
+│                                                                                                                                                                                  │
+│   536 │   │   # caller sets stream_output=False, then ensure_console_is_safe() will                                                                                              │
+│   537 │   │   # disable any dynamic console elements while the command runs.                                                                                                     │
+│   538 │   │   if stream_output:                                                                                                                                                  │
+│ ❱ 539 │   │   │   return self._run_and_stream_output(args, filter_func=filter_func, **kwargs)                                                                                    │
+│   540 │   │                                                                                                                                                                      │
+│   541 │   │   # Can't filter non-streamed output.                                                                                                                                │
+│   542 │   │   if filter_func:                                                                                                                                                    │
+│                                                                                                                                                                                  │
+│ ╭─────────────────────────────────────────────────────────────────────────────────── locals ───────────────────────────────────────────────────────────────────────────────────╮ │
+│ │          args = [                                                                                                                                                            │ │
+│ │                 │   WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/PFiles64/WiX Toolset v5.0/bin/wix.exe'),                                      │ │
+│ │                 │   'build',                                                                                                                                                 │ │
+│ │                 │   '-ext',                                                                                                                                                  │ │
+│ │                 │                                                                                                                                                            │ │
+│ │                 WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/CFiles64/WixToolset/extensions/WixToolset.UI.wixext/5.0.2/wixext5/WixToolset.UI.… │ │
+│ │                 │   '-arch',                                                                                                                                                 │ │
+│ │                 │   'x64',                                                                                                                                                   │ │
+│ │                 │   'wallhaven_downloader.wxs',                                                                                                                              │ │
+│ │                 │   '-loc',                                                                                                                                                  │ │
+│ │                 │   'unicode.wxl',                                                                                                                                           │ │
+│ │                 │   '-pdbtype',                                                                                                                                              │ │
+│ │                 │   ... +3                                                                                                                                                   │ │
+│ │                 ]                                                                                                                                                            │ │
+│ │   filter_func = None                                                                                                                                                         │ │
+│ │        kwargs = {'check': True, 'cwd': WindowsPath('D:/programs/wallhaven_downloader-main/build/wallhaven_downloader/windows/app')}                                          │ │
+│ │          self = <briefcase.integrations.subprocess.Subprocess object at 0x000000000520E660>                                                                                  │ │
+│ │ stream_output = True                                                                                                                                                         │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\integrations\subprocess.py:616 in _run_and_stream_output                                                                                   │
+│                                                                                                                                                                                  │
+│   613 │   │   self._log_return_code(return_code)                                                                                                                                 │
+│   614 │   │                                                                                                                                                                      │
+│   615 │   │   if check and return_code:                                                                                                                                          │
+│ ❱ 616 │   │   │   raise subprocess.CalledProcessError(return_code, args, stderr=stderr)                                                                                          │
+│   617 │   │                                                                                                                                                                      │
+│   618 │   │   return subprocess.CompletedProcess(args, return_code, stderr=stderr)                                                                                               │
+│   619                                                                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ╭─────────────────────────────────────────────────────────────────────────────────── locals ───────────────────────────────────────────────────────────────────────────────────╮ │
+│ │        args = [                                                                                                                                                              │ │
+│ │               │   WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/PFiles64/WiX Toolset v5.0/bin/wix.exe'),                                        │ │
+│ │               │   'build',                                                                                                                                                   │ │
+│ │               │   '-ext',                                                                                                                                                    │ │
+│ │               │                                                                                                                                                              │ │
+│ │               WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/CFiles64/WixToolset/extensions/WixToolset.UI.wixext/5.0.2/wixext5/WixToolset.UI.wi… │ │
+│ │               │   '-arch',                                                                                                                                                   │ │
+│ │               │   'x64',                                                                                                                                                     │ │
+│ │               │   'wallhaven_downloader.wxs',                                                                                                                                │ │
+│ │               │   '-loc',                                                                                                                                                    │ │
+│ │               │   'unicode.wxl',                                                                                                                                             │ │
+│ │               │   '-pdbtype',                                                                                                                                                │ │
+│ │               │   ... +3                                                                                                                                                     │ │
+│ │               ]                                                                                                                                                              │ │
+│ │       check = True                                                                                                                                                           │ │
+│ │ filter_func = None                                                                                                                                                           │ │
+│ │      kwargs = {'cwd': WindowsPath('D:/programs/wallhaven_downloader-main/build/wallhaven_downloader/windows/app'), 'stdout': -1, 'stderr': -2, 'bufsize': 1}                 │ │
+│ │     process = <Popen: returncode: 311 args: ['C:\\Users\\PITY\\AppData\\Local\\BeeWare\\br...>                                                                               │ │
+│ │ return_code = 311                                                                                                                                                            │ │
+│ │        self = <briefcase.integrations.subprocess.Subprocess object at 0x000000000520E660>                                                                                    │ │
+│ │      stderr = None                                                                                                                                                           │ │
+│ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+CalledProcessError: Command '[WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/PFiles64/WiX Toolset v5.0/bin/wix.exe'), 'build', '-ext', WindowsPath('C:/Users/PITY/AppData/Local/BeeWare/briefcase/Cache/tools/wix/CFiles64/WixToolset/extensions/WixToolset.UI.wixext/5.0.2/wixext5/WixToolset.UI.wixext.dll'), '-arch', 'x64', 'wallhaven_downloader.wxs', '-loc', 'unicode.wxl', '-pdbtype', 'none', '-o', WindowsPath('D:/programs/wallhaven_downloader-main/dist/Wallhaven壁纸下载器-1.1.0.msi')]' returned non-zero exit status 311.
+
+The above exception was the direct cause of the following exception:
+
+╭─────────────────────────────────────────────────────────────────────── Traceback (most recent call last) ────────────────────────────────────────────────────────────────────────╮
+│ D:\Python\Lib\site-packages\briefcase\__main__.py:27 in main                                                                                                                     │
+│                                                                                                                                                                                  │
+│   24 │   │   │   Path.cwd() / "pyproject.toml",                                                                                                                                  │
+│   25 │   │   │   overrides=overrides,                                                                                                                                            │
+│   26 │   │   )                                                                                                                                                                   │
+│ ❱ 27 │   │   command(**options)                                                                                                                                                  │
+│   28 │   except HelpText as e:                                                                                                                                                   │
+│   29 │   │   console.info()                                                                                                                                                      │
+│   30 │   │   console.info(str(e))                                                                                                                                                │
+│                                                                                                                                                                                  │
+│ ╭──────────────────────────────────────────────── locals ─────────────────────────────────────────────────╮                                                                      │
+│ │       command = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30> │                                                                      │
+│ │       console = <briefcase.console.Console object at 0x000000000520C590>                                │                                                                      │
+│ │             e = BriefcaseCommandError('Unable to package app wallhaven_downloader.')                    │                                                                      │
+│ │ extra_cmdline = []                                                                                      │                                                                      │
+│ │       options = {                                                                                       │                                                                      │
+│ │                 │   'update': False,                                                                    │                                                                      │
+│ │                 │   'packaging_format': 'msi',                                                          │                                                                      │
+│ │                 │   'adhoc_sign': False,                                                                │                                                                      │
+│ │                 │   'identity': None,                                                                   │                                                                      │
+│ │                 │   'file_digest': 'sha256',                                                            │                                                                      │
+│ │                 │   'use_local_machine': False,                                                         │                                                                      │
+│ │                 │   'cert_store': 'My',                                                                 │                                                                      │
+│ │                 │   'timestamp_url': 'http://timestamp.digicert.com',                                   │                                                                      │
+│ │                 │   'timestamp_digest': 'sha256'                                                        │                                                                      │
+│ │                 }                                                                                       │                                                                      │
+│ │     overrides = {}                                                                                      │                                                                      │
+│ │        result = 200                                                                                     │                                                                      │
+│ ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯                                                                      │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\commands\package.py:204 in __call__                                                                                                        │
+│                                                                                                                                                                                  │
+│   201 │   │                                                                                                                                                                      │
+│   202 │   │   state = None                                                                                                                                                       │
+│   203 │   │   for _, app_obj in sorted(apps_to_package.items()):                                                                                                                 │
+│ ❱ 204 │   │   │   state = self._package_app(                                                                                                                                     │
+│   205 │   │   │   │   app_obj,                                                                                                                                                   │
+│   206 │   │   │   │   update=update,                                                                                                                                             │
+│   207 │   │   │   │   **full_options(state, options),                                                                                                                            │
+│                                                                                                                                                                                  │
+│ ╭───────────────────────────────────────────────── locals ──────────────────────────────────────────────────╮                                                                    │
+│ │               _ = 'wallhaven_downloader'                                                                  │                                                                    │
+│ │             app = None                                                                                    │                                                                    │
+│ │        app_name = None                                                                                    │                                                                    │
+│ │         app_obj = <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>                                   │                                                                    │
+│ │ apps_to_package = {'wallhaven_downloader': <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>}         │                                                                    │
+│ │         options = {                                                                                       │                                                                    │
+│ │                   │   'packaging_format': 'msi',                                                          │                                                                    │
+│ │                   │   'adhoc_sign': False,                                                                │                                                                    │
+│ │                   │   'identity': None,                                                                   │                                                                    │
+│ │                   │   'file_digest': 'sha256',                                                            │                                                                    │
+│ │                   │   'use_local_machine': False,                                                         │                                                                    │
+│ │                   │   'cert_store': 'My',                                                                 │                                                                    │
+│ │                   │   'timestamp_url': 'http://timestamp.digicert.com',                                   │                                                                    │
+│ │                   │   'timestamp_digest': 'sha256'                                                        │                                                                    │
+│ │                   }                                                                                       │                                                                    │
+│ │            self = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30> │                                                                    │
+│ │           state = None                                                                                    │                                                                    │
+│ │          update = False                                                                                   │                                                                    │
+│ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯                                                                    │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\commands\package.py:134 in _package_app                                                                                                    │
+│                                                                                                                                                                                  │
+│   131 │   │   self.clean_dist_folder(app, **options)                                                                                                                             │
+│   132 │   │                                                                                                                                                                      │
+│   133 │   │   # Package the app                                                                                                                                                  │
+│ ❱ 134 │   │   state = self.package_app(app, **full_options(state, options))                                                                                                      │
+│   135 │   │                                                                                                                                                                      │
+│   136 │   │   filename = self.distribution_path(app).relative_to(self.base_path)                                                                                                 │
+│   137 │   │   self.console.info(f"Packaged {filename}", prefix=app.app_name)                                                                                                     │
+│                                                                                                                                                                                  │
+│ ╭────────────────────────────────────────────────────────────────── locals ──────────────────────────────────────────────────────────────────╮                                   │
+│ │              app = <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>                                                                   │                                   │
+│ │      binary_file = WindowsPath('D:/programs/wallhaven_downloader-main/build/wallhaven_downloader/windows/app/src/Wallhaven壁纸下载器.exe') │                                   │
+│ │          options = {                                                                                                                       │                                   │
+│ │                    │   'adhoc_sign': False,                                                                                                │                                   │
+│ │                    │   'identity': None,                                                                                                   │                                   │
+│ │                    │   'file_digest': 'sha256',                                                                                            │                                   │
+│ │                    │   'use_local_machine': False,                                                                                         │                                   │
+│ │                    │   'cert_store': 'My',                                                                                                 │                                   │
+│ │                    │   'timestamp_url': 'http://timestamp.digicert.com',                                                                   │                                   │
+│ │                    │   'timestamp_digest': 'sha256'                                                                                        │                                   │
+│ │                    }                                                                                                                       │                                   │
+│ │ packaging_format = 'msi'                                                                                                                   │                                   │
+│ │             self = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30>                                 │                                   │
+│ │            state = None                                                                                                                    │                                   │
+│ │    template_file = WindowsPath('D:/programs/wallhaven_downloader-main/build/wallhaven_downloader/windows/app')                             │                                   │
+│ │           update = False                                                                                                                   │                                   │
+│ ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯                                   │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\platforms\windows\__init__.py:568 in package_app                                                                                           │
+│                                                                                                                                                                                  │
+│   565 │   │   if app.packaging_format == "zip":                                                                                                                                  │
+│   566 │   │   │   self._package_zip(app)                                                                                                                                         │
+│   567 │   │   else:                                                                                                                                                              │
+│ ❱ 568 │   │   │   self._package_msi(app)                                                                                                                                         │
+│   569 │   │   │                                                                                                                                                                  │
+│   570 │   │   │   if sign_app:                                                                                                                                                   │
+│   571 │   │   │   │   self.console.info("Signing MSI...", prefix=app.app_name)                                                                                                   │
+│                                                                                                                                                                                  │
+│ ╭────────────────────────────────────────────────── locals ───────────────────────────────────────────────────╮                                                                  │
+│ │        adhoc_sign = False                                                                                   │                                                                  │
+│ │               app = <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>                                   │                                                                  │
+│ │        cert_store = 'My'                                                                                    │                                                                  │
+│ │       file_digest = 'sha256'                                                                                │                                                                  │
+│ │          identity = None                                                                                    │                                                                  │
+│ │            kwargs = {}                                                                                      │                                                                  │
+│ │              self = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30> │                                                                  │
+│ │          sign_app = False                                                                                   │                                                                  │
+│ │  timestamp_digest = 'sha256'                                                                                │                                                                  │
+│ │     timestamp_url = 'http://timestamp.digicert.com'                                                         │                                                                  │
+│ │ use_local_machine = False                                                                                   │                                                                  │
+│ ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────╯                                                                  │
+│                                                                                                                                                                                  │
+│ D:\Python\Lib\site-packages\briefcase\platforms\windows\__init__.py:602 in _package_msi                                                                                          │
+│                                                                                                                                                                                  │
+│   599 │   │   │   │   │   cwd=self.bundle_path(app),                                                                                                                             │
+│   600 │   │   │   │   )                                                                                                                                                          │
+│   601 │   │   except subprocess.CalledProcessError as e:                                                                                                                         │
+│ ❱ 602 │   │   │   raise BriefcaseCommandError(f"Unable to package app {app.app_name}.") from e                                                                                   │
+│   603 │                                                                                                                                                                          │
+│   604 │   def _package_zip(self, app):                                                                                                                                           │
+│   605 │   │   """Package the app as simple zip file."""                                                                                                                          │
+│                                                                                                                                                                                  │
+│ ╭──────────────────────────────────────────── locals ────────────────────────────────────────────╮                                                                               │
+│ │  app = <com.wallhaven.wallhaven-downloader v1.1.0 AppConfig>                                   │                                                                               │
+│ │ self = <briefcase.platforms.windows.app.WindowsAppPackageCommand object at 0x000000000520DD30> │                                                                               │
+│ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯                                                                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+BriefcaseCommandError: Unable to package app wallhaven_downloader.

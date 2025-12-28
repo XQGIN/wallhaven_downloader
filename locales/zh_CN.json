@@ -1,0 +1,123 @@
+{
+  "app": {
+    "name": "Wallhaven壁纸下载器",
+    "version": "v2.0.0",
+    "ready": "就绪",
+    "exit": "退出"
+  },
+  "window": {
+    "settings": "设置",
+    "about": "关于"
+  },
+  "download": {
+    "settings_title": "下载设置",
+    "method": "下载方式",
+    "category_download": "从指定类别下载",
+    "latest_download": "下载最新壁纸",
+    "search_download": "从搜索下载",
+    "start": "开始下载",
+    "stop": "停止下载",
+    "dir": "下载目录",
+    "browse": "浏览",
+    "start_page": "起始页数",
+    "page_count": "下载页数",
+    "concurrent": "并发下载数"
+  },
+  "category": {
+    "title": "类别设置",
+    "label": "类别",
+    "all": "全部",
+    "general": "一般",
+    "anime": "动漫",
+    "people": "人物"
+  },
+  "purity": {
+    "label": "纯度",
+    "sfw": "安全",
+    "sketchy": "轻度",
+    "nsfw": "成人"
+  },
+  "ratio": {
+    "title": "壁纸比例",
+    "label": "壁纸比例",
+    "all": "全部",
+    "landscape": "横向壁纸",
+    "portrait": "纵向壁纸",
+    "square": "正方形壁纸",
+    "custom": "自定义比例"
+  },
+  "search": {
+    "title": "搜索设置",
+    "keyword": "搜索关键词"
+  },
+  "preview": {
+    "title": "图片预览",
+    "clear": "清除预览",
+    "open_dir": "打开下载目录",
+    "downloaded": "已下载: {count} 张",
+    "page_info": "第 {current} 页 / 共{total}页",
+    "first_page": "首页",
+    "prev_page": "上一页",
+    "next_page": "下一页",
+    "last_page": "末页",
+    "jump_to": "跳转到",
+    "jump": "跳转"
+  },
+  "settings_dialog": {
+    "title": "设置",
+    "download_group": "下载设置",
+    "ui_group": "界面设置",
+    "language_group": "语言设置",
+    "api_key": "API密钥",
+    "images_per_page": "每页图片数",
+    "timeout": "下载超时",
+    "theme": "主题",
+    "transparency": "玻璃透明度",
+    "preview_size": "预览图片大小",
+    "language": "语言",
+    "ok": "确定",
+    "cancel": "取消",
+    "seconds": " 秒"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "auto": "自动"
+  },
+  "language": {
+    "zh_CN": "简体中文",
+    "en_US": "English"
+  },
+  "preview_size": {
+    "small": "小 (150x150)",
+    "medium": "中 (200x200)",
+    "large": "大 (300x300)"
+  },
+  "about_dialog": {
+    "title": "关于",
+    "author": "👨‍💻 作者",
+    "author_name": "XQGIN",
+    "features": "📋 类别说明",
+    "category_desc": "<b>all</b> 全部 &nbsp;|&nbsp; <b>general</b> 一般 &nbsp;|&nbsp; <b>anime</b> 动漫<br><b>people</b> 人物 &nbsp;|&nbsp; <b>ga</b> 一般+动漫 &nbsp;|&nbsp; <b>gp</b> 一般+人物",
+    "purity_title": "🎨 纯度说明",
+    "purity_desc": "<b>sfw</b> 安全 &nbsp;|&nbsp; <b>sketchy</b> 轻度 &nbsp;|&nbsp; <b>nsfw</b> 成人<br><b>ws</b> 安全+轻度 &nbsp;|&nbsp; <b>wn</b> 安全+成人 &nbsp;|&nbsp; <b>sn</b> 轻度+成人",
+    "license_title": "⚖️ 开源许可",
+    "license_desc": "本项目基于 <b>MIT</b> 许可证开源<br>您可以自由使用、修改和分发本软件",
+    "visit_github": "📦 访问 GitHub",
+    "ok": "✓ 确定"
+  },
+  "tray": {
+    "show": "显示窗口",
+    "minimize": "最小化到托盘",
+    "exit": "退出"
+  },
+  "message": {
+    "confirm": "确认",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "downloading_confirm": "下载正在进行中，是否停止并退出？",
+    "yes": "是",
+    "no": "否"
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "app": {
+    "name": "Wallhaven Downloader",
+    "version": "v2.0.0",
+    "ready": "Ready",
+    "exit": "Exit"
+  },
+  "window": {
+    "settings": "Settings",
+    "about": "About"
+  },
+  "download": {
+    "settings_title": "Download Settings",
+    "method": "Download Method",
+    "category_download": "Download from Category",
+    "latest_download": "Download Latest Wallpapers",
+    "search_download": "Download from Search",
+    "start": "Start Download",
+    "stop": "Stop Download",
+    "dir": "Download Directory",
+    "browse": "Browse",
+    "start_page": "Start Page",
+    "page_count": "Page Count",
+    "concurrent": "Concurrent Downloads"
+  },
+  "category": {
+    "title": "Category Settings",
+    "label": "Category",
+    "all": "All",
+    "general": "General",
+    "anime": "Anime",
+    "people": "People"
+  },
+  "purity": {
+    "label": "Purity",
+    "sfw": "SFW",
+    "sketchy": "Sketchy",
+    "nsfw": "NSFW"
+  },
+  "ratio": {
+    "title": "Wallpaper Ratio",
+    "label": "Ratio",
+    "all": "All",
+    "landscape": "Landscape",
+    "portrait": "Portrait",
+    "square": "Square",
+    "custom": "Custom"
+  },
+  "search": {
+    "title": "Search Settings",
+    "keyword": "Search Keyword"
+  },
+  "preview": {
+    "title": "Image Preview",
+    "clear": "Clear Preview",
+    "open_dir": "Open Download Directory",
+    "downloaded": "Downloaded: {count} images",
+    "page_info": "Page {current} / {total}",
+    "first_page": "First",
+    "prev_page": "Previous",
+    "next_page": "Next",
+    "last_page": "Last",
+    "jump_to": "Jump to:",
+    "jump": "Jump"
+  },
+  "settings_dialog": {
+    "title": "Settings",
+    "download_group": "Download Settings",
+    "ui_group": "UI Settings",
+    "language_group": "Language Settings",
+    "api_key": "API Key",
+    "images_per_page": "Images Per Page",
+    "timeout": "Download Timeout",
+    "theme": "Theme",
+    "transparency": "Glass Transparency",
+    "preview_size": "Preview Size",
+    "language": "Language",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "seconds": " seconds"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
+  "language": {
+    "zh_CN": "简体中文",
+    "en_US": "English"
+  },
+  "preview_size": {
+    "small": "Small (150x150)",
+    "medium": "Medium (200x200)",
+    "large": "Large (300x300)"
+  },
+  "about_dialog": {
+    "title": "About",
+    "author": "👨‍💻 Author",
+    "author_name": "XQGIN",
+    "features": "📋 Category Description",
+    "category_desc": "<b>all</b> All &nbsp;|&nbsp; <b>general</b> General &nbsp;|&nbsp; <b>anime</b> Anime<br><b>people</b> People &nbsp;|&nbsp; <b>ga</b> General+Anime &nbsp;|&nbsp; <b>gp</b> General+People",
+    "purity_title": "🎨 Purity Description",
+    "purity_desc": "<b>sfw</b> SFW &nbsp;|&nbsp; <b>sketchy</b> Sketchy &nbsp;|&nbsp; <b>nsfw</b> NSFW<br><b>ws</b> SFW+Sketchy &nbsp;|&nbsp; <b>wn</b> SFW+NSFW &nbsp;|&nbsp; <b>sn</b> Sketchy+NSFW",
+    "license_title": "⚖️ Open Source License",
+    "license_desc": "This project is licensed under <b>MIT</b> License<br>You are free to use, modify, and distribute this software",
+    "visit_github": "📦 Visit GitHub",
+    "ok": "✓ OK"
+  },
+  "tray": {
+    "show": "Show Window",
+    "minimize": "Minimize to Tray",
+    "exit": "Exit"
+  },
+  "message": {
+    "confirm": "Confirm",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "downloading_confirm": "Download is in progress. Stop and exit?",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

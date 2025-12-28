@@ -14,5 +14,6 @@
     "concurrent_downloads": 3,
     "wallpaper_ratio": "全部",
     "start_page": 1014,
-    "show_filename": false
+    "show_filename": false,
+    "language": "zh_CN"
 }

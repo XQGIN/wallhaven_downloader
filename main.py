@@ -6,8 +6,8 @@ import os
 import signal
 import atexit
 
-# 添加src目录到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# 添加wallhaven_downloader目录到Python路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'wallhaven_downloader'))
 
 # 初始化日志系统
 from utils.logger import setup_logger
@@ -53,7 +53,7 @@ def main():
     
     # 设置应用程序信息
     app.setApplicationName("Wallhaven壁纸下载器")
-    app.setApplicationVersion("1.1.0")
+    app.setApplicationVersion("2.0.0")
     app.setOrganizationName("WallhavenDownloader")
     
     # 设置应用程序图标
@@ -64,11 +64,11 @@ def main():
         from main_window import MainWindow
     except ImportError:
         try:
-            import src.main_window as main_window_module
+            import wallhaven_downloader.main_window as main_window_module
             MainWindow = main_window_module.MainWindow
         except ImportError:
             import importlib.util
-            main_window_path = os.path.join(os.path.dirname(__file__), 'src', 'main_window.py')
+            main_window_path = os.path.join(os.path.dirname(__file__), 'wallhaven_downloader', 'main_window.py')
             spec = importlib.util.spec_from_file_location("main_window", main_window_path)
             main_window_module = importlib.util.module_from_spec(spec)
             sys.modules["main_window"] = main_window_module
