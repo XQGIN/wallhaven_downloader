@@ -1,0 +1,95 @@
+[tool.briefcase]
+project_name = "Wallhaven Downloader"
+bundle = "com.wallhaven"
+version = "1.1.0"
+url = "https://github.com/XQGIN/wallhaven_downloader"
+license.file = "LICENSE"
+author = "XQGIN"
+author_email = ""
+
+[tool.briefcase.app.wallhaven_downloader]
+formal_name = "Wallhaven Downloader"
+description = "A PyQt5-based Wallhaven wallpaper batch download tool"
+long_description = """A PyQt5-based Wallhaven wallpaper batch download tool with multiple download modes and custom settings.
+
+Features:
+- Multiple download modes: Latest wallpapers, category-based downloads, keyword search
+- High-performance downloads: Multi-threaded concurrent downloads for efficiency
+- Beautiful UI: Liquid glass effect design with light/dark/auto theme switching
+- Image preview: Real-time preview of downloaded images with pagination
+- Smart management: Automatic duplicate detection, resume support, memory optimization
+"""
+sources = ['wallhaven_downloader']
+icon = "icon/logo"
+splash = "icon/logo"
+
+# 添加额外资源文件
+resources = [
+    'locales',
+    'icon',
+]
+
+test_sources = ['tests']
+
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# Windows配置
+[tool.briefcase.app.wallhaven_downloader.windows]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# 为 Windows MSI 指定编码
+codepage = 65001
+
+# macOS配置
+[tool.briefcase.app.wallhaven_downloader.macOS]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+
+# Linux配置
+[tool.briefcase.app.wallhaven_downloader.linux]
+requires = [
+    'PyQt5==5.15.9',
+    'requests==2.31.0',
+    'Pillow>=10.0.0,<13.0.0',
+    'psutil==5.9.5',
+    'urllib3==2.0.4',
+    'loguru>=0.7.0',
+    'python-dotenv>=1.0.0',
+]
+system_requires = [
+    'libgl1-mesa-glx',
+    'libxkbcommon-x11-0',
+    'libxcb-icccm4',
+    'libxcb-image0',
+    'libxcb-keysyms1',
+    'libxcb-randr0',
+    'libxcb-render-util0',
+    'libxcb-xinerama0',
+    'libxcb-xfixes0',
+]
+
+[build-system]
+requires = ["briefcase"]

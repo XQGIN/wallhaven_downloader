@@ -1,0 +1,191 @@
+{
+  "app": {
+    "name": "Wallhaven Downloader",
+    "version": "v2.2.0",
+    "ready": "Ready",
+    "exit": "Exit"
+  },
+  "window": {
+    "settings": "Settings",
+    "about": "About"
+  },
+  "download": {
+    "settings_title": "Download Settings",
+    "method": "Download Method",
+    "category_download": "Download from Category",
+    "latest_download": "Download Latest Wallpapers",
+    "search_download": "Download from Search",
+    "start": "Start Download",
+    "stop": "Stop Download",
+    "dir": "Download Directory",
+    "browse": "Browse",
+    "start_page": "Start Page",
+    "page_count": "Page Count",
+    "concurrent": "Concurrent Downloads"
+  },
+  "category": {
+    "title": "Category Settings",
+    "label": "Category",
+    "all": "All",
+    "general": "General",
+    "anime": "Anime",
+    "people": "People"
+  },
+  "purity": {
+    "label": "Purity",
+    "sfw": "SFW",
+    "sketchy": "Sketchy",
+    "nsfw": "NSFW"
+  },
+  "ratio": {
+    "title": "Wallpaper Ratio",
+    "label": "Ratio",
+    "all": "All",
+    "landscape": "Landscape",
+    "portrait": "Portrait",
+    "square": "Square",
+    "custom": "Custom"
+  },
+  "search": {
+    "title": "Search Settings",
+    "keyword": "Search Keyword"
+  },
+  "preview": {
+    "title": "Image Preview",
+    "clear": "Clear Preview",
+    "open_dir": "Open Download Directory",
+    "downloaded": "Downloaded: {count} images",
+    "page_info": "Page {current} / {total}",
+    "first_page": "First",
+    "prev_page": "Previous",
+    "next_page": "Next",
+    "last_page": "Last",
+    "jump_to": "Jump to:",
+    "jump": "Jump",
+    "delete_confirm": "Confirm Delete",
+    "delete_message": "Are you sure you want to delete this image?",
+    "delete_success": "Success",
+    "delete_success_message": "Image deleted",
+    "image_load_failed": "Failed to load image"
+  },
+  "settings_dialog": {
+    "title": "Settings",
+    "download_group": "Download Settings",
+    "ui_group": "UI Settings",
+    "language_group": "Language Settings",
+    "api_key": "API Key",
+    "api_key_desc": "Wallhaven API key for advanced features",
+    "api_key_placeholder": "Enter API key...",
+    "images_per_page": "Images Per Page",
+    "images_per_page_desc": "Number of images per request (1-100)",
+    "timeout": "Download Timeout",
+    "timeout_desc": "Timeout for download requests (seconds)",
+    "concurrent_desc": "Number of simultaneous downloads (1-10)",
+    "theme": "Theme",
+    "theme_desc": "Select UI display style (Light only)",
+    "transparency": "Glass Transparency",
+    "transparency_desc": "Adjust glass effect transparency (100-255)",
+    "preview_size": "Preview Size",
+    "preview_size_desc": "Set preview thumbnail size",
+    "language": "Language",
+    "language_desc": "Select interface language",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "apply_restart": "Apply & Restart",
+    "seconds": " seconds"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
+  "language": {
+    "zh_CN": "简体中文",
+    "en_US": "English"
+  },
+  "preview_size": {
+    "small": "Small (150x150)",
+    "medium": "Medium (200x200)",
+    "large": "Large (300x300)"
+  },
+  "about_dialog": {
+    "title": "About",
+    "author": "👨‍💻 Author",
+    "author_name": "XQGIN",
+    "features": "📋 Category Description",
+    "category_desc": "<b>all</b> All &nbsp;|&nbsp; <b>general</b> General &nbsp;|&nbsp; <b>anime</b> Anime<br><b>people</b> People &nbsp;|&nbsp; <b>ga</b> General+Anime &nbsp;|&nbsp; <b>gp</b> General+People",
+    "purity_title": "🎨 Purity Description",
+    "purity_desc": "<b>sfw</b> SFW &nbsp;|&nbsp; <b>sketchy</b> Sketchy &nbsp;|&nbsp; <b>nsfw</b> NSFW<br><b>ws</b> SFW+Sketchy &nbsp;|&nbsp; <b>wn</b> SFW+NSFW &nbsp;|&nbsp; <b>sn</b> Sketchy+NSFW",
+    "license_title": "⚖️ Open Source License",
+    "license_desc": "This project is licensed under <b>MIT</b> License<br>You are free to use, modify, and distribute this software",
+    "visit_github": "📦 Visit GitHub",
+    "ok": "✓ OK"
+  },
+  "tray": {
+    "show": "Show Window",
+    "minimize": "Minimize to Tray",
+    "exit": "Exit"
+  },
+  "message": {
+    "confirm": "Confirm",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "downloading_confirm": "Download is in progress. Stop and exit?",
+    "download_stopped": "Download Stopped",
+    "download_stopped_msg": "Download has been stopped.\nYou can click 'Start Download' button later to continue downloading unfinished images.",
+    "download_completed": "Download Completed",
+    "download_completed_msg": "Wallpaper download completed",
+    "download_completed_with_duplicates": "Wallpaper download completed! {count} duplicate files were skipped.",
+    "download_failed": "Download Failed",
+    "download_failed_msg": "Download failed: {error}",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "status": {
+    "ready": "Ready",
+    "resuming": "Resuming download...",
+    "fetching_list": "Fetching image list...",
+    "fetching_with_duplicates": "Fetching image list... ({count} duplicates detected)",
+    "downloading": "Downloading: {filename}",
+    "stopped": "Download stopped",
+    "completed": "Download completed",
+    "failed": "Download failed"
+  },
+  "empty_state": {
+    "empty_title": "No Content",
+    "empty_description": "There's nothing here yet\nClick the button below to get started",
+    "action_button": "Get Started",
+    "error_title": "Something Went Wrong",
+    "error_description": "Failed to load content\nPlease check your network connection and try again",
+    "retry_button": "Retry"
+  },
+  "image_card": {
+    "loading": "Loading...",
+    "load_failed": "Load Failed",
+    "click_retry": "Click to Retry"
+  },
+  "fullscreen_preview": {
+    "title": "Image Preview",
+    "cannot_load": "Cannot Load Image"
+  },
+  "common": {
+    "reset_default": "Reset to Default"
+  },
+  "main_window": {
+    "skip_duplicates": "Auto Skip Duplicates",
+    "skip_duplicates_desc": "Automatically skip existing files during download",
+    "enable_animations": "Enable Animations",
+    "enable_animations_desc": "Enable interface animations and transition effects",
+    "performance_mode": "Performance Mode",
+    "performance_mode_desc": "Reduce animation complexity to improve performance",
+    "gpu_acceleration": "GPU Acceleration",
+    "gpu_acceleration_desc": "Use GPU acceleration for rendering (requires restart)",
+    "performance_settings": "Performance Settings",
+    "advanced_settings": "Advanced Settings",
+    "debug_mode": "Debug Mode",
+    "debug_mode_desc": "Enable debug logging and performance monitoring",
+    "auto_update": "Auto Check Updates",
+    "auto_update_desc": "Automatically check for application updates on startup"
+  }
+}
