@@ -1,0 +1,19 @@
+{
+    "api_key": "C2qeqidAbvmKbmRaX6493eiexCu4C77W",
+    "theme": "自动",
+    "glass_transparency": 160,
+    "images_per_page": 64,
+    "download_timeout": 30,
+    "preview_size": "大 (300x300)",
+    "download_dir": "D:/图片/Camera Roll",
+    "download_method": "category",
+    "category": "people",
+    "purity": "nsfw",
+    "search_query": "",
+    "page_count": 100,
+    "concurrent_downloads": 3,
+    "wallpaper_ratio": "全部",
+    "start_page": 1014,
+    "show_filename": false,
+    "language": "zh_CN"
+}
