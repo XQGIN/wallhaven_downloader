@@ -1,0 +1,40 @@
+# UTF-8
+#
+# Windows 版本信息资源（PyInstaller version= 参数使用）
+# 作者: XQGIN
+# 项目地址: https://github.com/XQGIN/wallhaven_downloader
+
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    # 文件版本与产品版本 (主, 次, 修订, 构建)
+    filevers=(2, 2, 0, 0),
+    prodvers=(2, 2, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,        # NT_WINDOWS32
+    fileType=0x1,      # VFT_APP
+    subtype=0x0,
+    date=(0, 0),
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          u'040904B0',   # 简体中文(0x0409)/Unicode(1200)... 使用 0x0409 + 0x04B0
+          [
+            StringStruct(u'CompanyName', u'XQGIN'),
+            StringStruct(u'FileDescription', u'Wallhaven壁纸下载器'),
+            StringStruct(u'FileVersion', u'2.2.0.0'),
+            StringStruct(u'InternalName', u'WallhavenDownloader'),
+            StringStruct(u'LegalCopyright', u'Copyright (c) 2026 XQGIN. MIT License.'),
+            StringStruct(u'OriginalFilename', u'WallhavenDownloader.exe'),
+            StringStruct(u'ProductName', u'Wallhaven壁纸下载器'),
+            StringStruct(u'ProductVersion', u'2.2.0.0'),
+            StringStruct(u'Comments', u'基于 PyQt5 的 Wallhaven 壁纸批量下载工具。作者: XQGIN。项目地址: https://github.com/XQGIN/wallhaven_downloader'),
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct(u'Translation', [0x0409, 1200])]),
+  ]
+)
